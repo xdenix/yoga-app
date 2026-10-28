@@ -42,8 +42,8 @@ class FakeYogaRepository(
 
     override suspend fun getProgram(): YogaProgram? = _program.value
 
-    override suspend fun createProgram(level: YogaLevel): YogaProgram {
-        val generated = GenerateProgramForTest(level)
+    override suspend fun createProgram(level: YogaLevel, posesPerDay: Int): YogaProgram {
+        val generated = GenerateProgramForTest(level, posesPerDay)
         _program.value = generated
         return generated
     }
@@ -111,5 +111,5 @@ class FakeYogaRepository(
 
 /** Test-only program generator — mirrors [com.example.yogaapp.domain.usecase.GenerateProgramUseCase]
  *  but instantiated without DI so tests can call it directly. */
-private fun GenerateProgramForTest(level: YogaLevel): YogaProgram =
-    com.example.yogaapp.domain.usecase.GenerateProgramUseCase().invoke(level)
+private fun GenerateProgramForTest(level: YogaLevel, posesPerDay: Int): YogaProgram =
+    com.example.yogaapp.domain.usecase.GenerateProgramUseCase().invoke(level, posesPerDay)

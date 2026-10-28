@@ -14,19 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Per-session countdown timer.
- *
- * Drives the [com.example.yogaapp.ui.session.SessionPlayerScreen] timer UI:
- *  - holds the current [remaining] seconds
- *  - holds the current pose index in the session sequence
- *  - ticks once per second on [dispatchers.default]
- *  - emits a [SessionTickListener.onPoseFinished] when [remaining] hits 0, advancing to the
- *    next pose (or emitting onSessionFinished if it was the last)
- *
- * Pause/resume/skip/back all manipulate the internal coroutine job; the timer state is
- * always observable via [state] so the UI re-renders automatically.
- *
- * Pure domain logic — no Android imports — so the timer is JVM-testable.
+ * Per-session countdown timer with optional pause between poses.
  */
 class SessionTimerUseCase @Inject constructor(
     private val dispatchers: AppDispatchers,
@@ -36,13 +24,15 @@ class SessionTimerUseCase @Inject constructor(
     val state: StateFlow<SessionTimerState> = _state.asStateFlow()
 
     private var tickJob: Job? = null
+    private var pauseBetweenSec: Int = YogaRules.DEFAULT_PAUSE_BETWEEN_SEC
 
-    /**
-     * Initialises the timer with the session's poses + per-pose durations.
-     * [globalDurationSec] overrides individual pose durations when non-null.
-     */
-    fun start(poses: List<Pair<YogaPose, DayPoseEntry>>, globalDurationSec: Int?) {
+    fun start(
+        poses: List<Pair<YogaPose, DayPoseEntry>>,
+        globalDurationSec: Int?,
+        pauseBetweenSec: Int = YogaRules.DEFAULT_PAUSE_BETWEEN_SEC,
+    ) {
         cancel()
+        this.pauseBetweenSec = pauseBetweenSec.coerceIn(YogaRules.MIN_PAUSE_SEC, YogaRules.MAX_PAUSE_SEC)
         val entries = poses.mapIndexed { idx, (pose, entry) ->
             val duration = globalDurationSec
                 ?: entry.durationOverrideSec
@@ -60,6 +50,7 @@ class SessionTimerUseCase @Inject constructor(
             remaining = entries.firstOrNull()?.durationSec ?: 0,
             isRunning = true,
             isFinished = entries.isEmpty(),
+            isPause = false,
         )
         startTicking()
     }
@@ -76,25 +67,34 @@ class SessionTimerUseCase @Inject constructor(
     }
 
     fun skip() {
-        advanceToNext()
+        advanceToNext(forceSkipPause = true)
     }
 
     fun previous() {
         val current = _state.value
+        if (current.isPause) {
+            _state.value = current.copy(
+                isPause = false,
+                remaining = current.poses[current.currentIndex].durationSec,
+            )
+            tickJob?.cancel()
+            if (current.isRunning) startTicking()
+            return
+        }
         if (current.currentIndex == 0) return
         val newIndex = current.currentIndex - 1
         _state.value = current.copy(
             currentIndex = newIndex,
             remaining = current.poses[newIndex].durationSec,
+            isPause = false,
         )
         tickJob?.cancel()
         if (current.isRunning) startTicking()
     }
 
-    /** Adjusts the current pose's duration on the fly (user changed the per-pose slider). */
     fun setDurationForCurrentPose(sec: Int) {
         val current = _state.value
-        if (current.isFinished) return
+        if (current.isFinished || current.isPause) return
         val clamped = sec.coerceIn(YogaRules.MIN_DURATION_SEC, YogaRules.MAX_DURATION_SEC)
         val updatedPoses = current.poses.toMutableList().also { list ->
             list[current.currentIndex] = list[current.currentIndex].copy(durationSec = clamped)
@@ -117,7 +117,7 @@ class SessionTimerUseCase @Inject constructor(
                 delay(TICK_INTERVAL_MS)
                 val current = _state.value
                 if (current.remaining <= 1) {
-                    advanceToNext()
+                    advanceToNext(forceSkipPause = false)
                 } else {
                     _state.value = current.copy(remaining = current.remaining - 1)
                 }
@@ -125,22 +125,54 @@ class SessionTimerUseCase @Inject constructor(
         }
     }
 
-    private fun advanceToNext() {
+    private fun advanceToNext(forceSkipPause: Boolean) {
         val current = _state.value
         if (current.isFinished) return
+
+        if (current.isPause) {
+            goToPose(current.currentIndex + 1)
+            return
+        }
+
         val nextIndex = current.currentIndex + 1
         if (nextIndex >= current.poses.size) {
             _state.value = current.copy(
                 isRunning = false,
                 isFinished = true,
                 remaining = 0,
+                isPause = false,
+            )
+            tickJob?.cancel()
+            return
+        }
+
+        if (!forceSkipPause && pauseBetweenSec > 0) {
+            _state.value = current.copy(
+                isPause = true,
+                remaining = pauseBetweenSec,
+            )
+            return
+        }
+
+        goToPose(nextIndex)
+    }
+
+    private fun goToPose(index: Int) {
+        val current = _state.value
+        if (index >= current.poses.size) {
+            _state.value = current.copy(
+                isRunning = false,
+                isFinished = true,
+                remaining = 0,
+                isPause = false,
             )
             tickJob?.cancel()
             return
         }
         _state.value = current.copy(
-            currentIndex = nextIndex,
-            remaining = current.poses[nextIndex].durationSec,
+            currentIndex = index,
+            remaining = current.poses[index].durationSec,
+            isPause = false,
         )
     }
 
@@ -162,10 +194,18 @@ data class SessionTimerState(
     val remaining: Int = 0,
     val isRunning: Boolean = false,
     val isFinished: Boolean = false,
+    val isPause: Boolean = false,
 ) {
     val current: SessionPose? get() = poses.getOrNull(currentIndex)
-    val totalDurationSec: Int get() = poses.sumOf { it.durationSec }
+    val totalDurationSec: Int
+        get() = poses.sumOf { it.durationSec }
     val elapsedSec: Int
-        get() = poses.subList(0, currentIndex).sumOf { it.durationSec } +
-            (current?.durationSec?.minus(remaining) ?: 0)
+        get() {
+            val done = poses.subList(0, currentIndex).sumOf { it.durationSec }
+            return if (isPause) {
+                done + (current?.durationSec ?: 0)
+            } else {
+                done + (current?.durationSec?.minus(remaining) ?: 0)
+            }
+        }
 }

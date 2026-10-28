@@ -66,6 +66,8 @@ data class PoseSpec(
  * [audioAssetName] is optional — when null, the AudioPlayer falls back to TTS for this pose.
  * When set, it's the file name (without extension) of an MP3 in the optional audio pack
  * (assets/audio-pack/); see [com.example.yogaapp.data.audio.AudioPackAssetProvider].
+ *
+ * [bilateral] when true: a day expands the pose into two timed slots (right, then left).
  */
 data class YogaPose(
     val id: String,
@@ -79,6 +81,7 @@ data class YogaPose(
     val defaultDurationSec: Int,
     val spec: PoseSpec,
     val audioAssetName: String? = null,
+    val bilateral: Boolean = false,
 )
 
 /**
@@ -91,6 +94,14 @@ object YogaRules {
     const val DEFAULT_GLOBAL_DURATION_SEC = 30
     const val PROGRAM_DAYS = 30
 
+    const val MIN_POSES_PER_DAY = 3
+    const val MAX_POSES_PER_DAY = 20
+    const val DEFAULT_POSES_PER_DAY = 10
+
+    const val MIN_PAUSE_SEC = 0
+    const val MAX_PAUSE_SEC = 120
+    const val DEFAULT_PAUSE_BETWEEN_SEC = 10
+
     fun isDurationValid(sec: Int): Boolean = sec in MIN_DURATION_SEC..MAX_DURATION_SEC
 
     fun durationLabel(sec: Int): String {
@@ -99,5 +110,26 @@ object YogaRules {
             sec % 60 == 0 -> "${sec / 60} мин"
             else -> "${sec / 60} мин ${sec % 60} с"
         }
+    }
+
+    /** Slot cost of a pose in a day list after left/right expansion. */
+    fun slotCost(pose: YogaPose): Int = if (pose.bilateral) 2 else 1
+
+    /**
+     * Expands poses into day entries: bilateral asanas become Right then Left;
+     * [orderIndex] is reassigned 0..n-1.
+     */
+    fun toDayEntries(poses: List<YogaPose>): List<DayPoseEntry> {
+        val raw = buildList {
+            for (p in poses) {
+                if (p.bilateral) {
+                    add(DayPoseEntry(p.id, 0, null, PoseSide.Right))
+                    add(DayPoseEntry(p.id, 0, null, PoseSide.Left))
+                } else {
+                    add(DayPoseEntry(p.id, 0, null, PoseSide.None))
+                }
+            }
+        }
+        return raw.mapIndexed { idx, e -> e.copy(orderIndex = idx) }
     }
 }

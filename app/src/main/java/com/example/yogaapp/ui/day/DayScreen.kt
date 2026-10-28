@@ -3,7 +3,6 @@ package com.example.yogaapp.ui.day
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +50,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.yogaapp.R
 import com.example.yogaapp.domain.model.DayPoseEntry
+import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.model.YogaRules
 import com.example.yogaapp.ui.components.ErrorState
@@ -63,7 +63,7 @@ import kotlinx.coroutines.launch
 fun DayScreen(
     dayId: String,
     onBack: () -> Unit,
-    onSwapClick: (String, String) -> Unit,
+    onSwapClick: (String, Int) -> Unit,
     onStartSession: (String) -> Unit,
     viewModel: DayViewModel = hiltViewModel(),
 ) {
@@ -136,11 +136,11 @@ fun DayScreen(
             is DayUiState.Content -> DayContent(
                 state = s,
                 onReorder = { from, to -> viewModel.onEvent(DayEvent.Reorder(from, to)) },
-                onSwapClick = { poseId -> onSwapClick(s.day.id, poseId) },
-                onSetDuration = { poseId, sec ->
-                    viewModel.onEvent(DayEvent.SetDuration(poseId, sec))
+                onSwapClick = { orderIndex -> onSwapClick(s.day.id, orderIndex) },
+                onSetDuration = { orderIndex, sec ->
+                    viewModel.onEvent(DayEvent.SetDuration(orderIndex, sec))
                 },
-                onDelete = { poseId -> viewModel.onEvent(DayEvent.DeletePose(poseId)) },
+                onDelete = { orderIndex -> viewModel.onEvent(DayEvent.DeletePose(orderIndex)) },
                 modifier = Modifier.padding(padding),
             )
         }
@@ -151,9 +151,9 @@ fun DayScreen(
 private fun DayContent(
     state: DayUiState.Content,
     onReorder: (Int, Int) -> Unit,
-    onSwapClick: (String) -> Unit,
-    onSetDuration: (String, Int) -> Unit,
-    onDelete: (String) -> Unit,
+    onSwapClick: (Int) -> Unit,
+    onSetDuration: (Int, Int) -> Unit,
+    onDelete: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -170,16 +170,16 @@ private fun DayContent(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(items = state.day.poses, key = { it.poseId }) { entry ->
+            items(items = state.day.poses, key = { "${it.poseId}-${it.orderIndex}-${it.side}" }) { entry ->
                 val pose = state.poseMap[entry.poseId]
                 if (pose != null) {
                     PoseCard(
                         entry = entry,
                         pose = pose,
                         globalDurationSec = state.globalDurationSec,
-                        onSwapClick = { onSwapClick(entry.poseId) },
-                        onSetDuration = { sec -> onSetDuration(entry.poseId, sec) },
-                        onDelete = { onDelete(entry.poseId) },
+                        onSwapClick = { onSwapClick(entry.orderIndex) },
+                        onSetDuration = { sec -> onSetDuration(entry.orderIndex, sec) },
+                        onDelete = { onDelete(entry.orderIndex) },
                     )
                 }
             }
@@ -203,68 +203,91 @@ private fun PoseCard(
             .fillMaxWidth()
             .semantics { contentDescription = cd },
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .pointerInput(Unit) {
                     detectDragGesturesAfterLongPress(
                         onDragStart = { /* visual feedback could be added here */ },
-                    ) { change, dragAmount ->
+                    ) { change, _ ->
                         change.consume()
-                        // Drag-to-reorder is wired through the LazyColumn state in production
-                        // via ReorderableList; here we expose the entry point as a gesture hint.
                     }
                 },
-            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.DragHandle,
-                contentDescription = stringResource(R.string.cd_reorder),
-                tint = MaterialTheme.colorScheme.outline,
-            )
-            Box(modifier = Modifier.size(56.dp).padding(start = 12.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DragHandle,
+                    contentDescription = stringResource(R.string.cd_reorder),
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(24.dp),
+                )
                 PoseFigure(
                     pose = pose,
-                    size = 56.dp,
+                    size = 48.dp,
                 )
-            }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
-                Text(
-                    text = pose.ruName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = pose.sanskritName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.day_duration_template, YogaRules.durationLabel(currentDuration)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Row {
-                    val cdSwap = stringResource(R.string.cd_swap_pose)
-                    IconButton(onClick = onSwapClick, modifier = Modifier.semantics { contentDescription = cdSwap }) {
-                        Icon(Icons.Filled.SwapHoriz, contentDescription = null)
-                    }
-                    val cdDel = stringResource(R.string.cd_delete_pose)
-                    IconButton(onClick = onDelete, modifier = Modifier.semantics { contentDescription = cdDel }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = null)
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = poseTitle(pose.ruName, entry.side),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = pose.sanskritName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.day_duration_template,
+                            YogaRules.durationLabel(currentDuration),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                    )
                 }
-                Slider(
-                    value = currentDuration.toFloat(),
-                    onValueChange = { onSetDuration(it.toInt()) },
-                    valueRange = YogaRules.MIN_DURATION_SEC.toFloat()..YogaRules.MAX_DURATION_SEC.toFloat(),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp),
-                )
+                val cdSwap = stringResource(R.string.cd_swap_pose)
+                IconButton(
+                    onClick = onSwapClick,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .semantics { contentDescription = cdSwap },
+                ) {
+                    Icon(Icons.Filled.SwapHoriz, contentDescription = null)
+                }
+                val cdDel = stringResource(R.string.cd_delete_pose)
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .semantics { contentDescription = cdDel },
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null)
+                }
             }
+            Slider(
+                value = currentDuration.toFloat(),
+                onValueChange = { onSetDuration(it.toInt()) },
+                valueRange = YogaRules.MIN_DURATION_SEC.toFloat()..YogaRules.MAX_DURATION_SEC.toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 28.dp)
+                    .padding(start = 32.dp),
+            )
         }
     }
+}
+
+@Composable
+private fun poseTitle(ruName: String, side: PoseSide): String = when (side) {
+    PoseSide.Right -> stringResource(R.string.pose_title_side, ruName, stringResource(R.string.pose_side_right))
+    PoseSide.Left -> stringResource(R.string.pose_title_side, ruName, stringResource(R.string.pose_side_left))
+    PoseSide.None -> ruName
 }
 
 @Composable

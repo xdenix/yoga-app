@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.domain.model.YogaLevel
+import com.example.yogaapp.domain.model.YogaRules
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,6 +27,8 @@ import javax.inject.Singleton
  *  - chosenLevel: Beginner / Intermediate / Advanced (drives program generation)
  *  - audioMode: TTS or MP3_PACK (default: TTS)
  *  - globalDurationSec: default duration applied to all poses when not overridden (default: 30)
+ *  - posesPerDay: how many random poses each program day gets (default: 10)
+ *  - pauseBetweenSec: rest seconds between poses in a session (default: 10)
  *  - audioPackEnabled: whether to use the optional MP3 pack when present (default: false)
  */
 private val Context.yogaSettingsDataStore: DataStore<Preferences> by preferencesDataStore(
@@ -66,6 +69,16 @@ class SettingsDataStore @Inject constructor(
         p[KEY_GLOBAL_DURATION] ?: DEFAULT_GLOBAL_DURATION
     }
 
+    val posesPerDay: Flow<Int> = store.data.map { p ->
+        (p[KEY_POSES_PER_DAY] ?: YogaRules.DEFAULT_POSES_PER_DAY)
+            .coerceIn(YogaRules.MIN_POSES_PER_DAY, YogaRules.MAX_POSES_PER_DAY)
+    }
+
+    val pauseBetweenSec: Flow<Int> = store.data.map { p ->
+        (p[KEY_PAUSE_BETWEEN] ?: YogaRules.DEFAULT_PAUSE_BETWEEN_SEC)
+            .coerceIn(YogaRules.MIN_PAUSE_SEC, YogaRules.MAX_PAUSE_SEC)
+    }
+
     val audioPackEnabled: Flow<Boolean> = store.data.map { p -> p[KEY_AUDIO_PACK_ENABLED] ?: false }
 
     val practiceMelody: Flow<PracticeMelody> = store.data.map { p ->
@@ -96,6 +109,21 @@ class SettingsDataStore @Inject constructor(
         store.edit { it[KEY_GLOBAL_DURATION] = sec.coerceIn(MIN_DURATION, MAX_DURATION) }
     }
 
+    suspend fun setPosesPerDay(count: Int) {
+        store.edit {
+            it[KEY_POSES_PER_DAY] = count.coerceIn(
+                YogaRules.MIN_POSES_PER_DAY,
+                YogaRules.MAX_POSES_PER_DAY,
+            )
+        }
+    }
+
+    suspend fun setPauseBetweenSec(sec: Int) {
+        store.edit {
+            it[KEY_PAUSE_BETWEEN] = sec.coerceIn(YogaRules.MIN_PAUSE_SEC, YogaRules.MAX_PAUSE_SEC)
+        }
+    }
+
     suspend fun setAudioPackEnabled(enabled: Boolean) {
         store.edit { it[KEY_AUDIO_PACK_ENABLED] = enabled }
     }
@@ -111,6 +139,8 @@ class SettingsDataStore @Inject constructor(
         private val KEY_LEVEL = stringPreferencesKey("level")
         private val KEY_AUDIO_MODE = stringPreferencesKey("audio_mode")
         private val KEY_GLOBAL_DURATION = intPreferencesKey("global_duration")
+        private val KEY_POSES_PER_DAY = intPreferencesKey("poses_per_day")
+        private val KEY_PAUSE_BETWEEN = intPreferencesKey("pause_between_sec")
         private val KEY_AUDIO_PACK_ENABLED = booleanPreferencesKey("audio_pack_enabled")
         private val KEY_MELODY = stringPreferencesKey("practice_melody")
 

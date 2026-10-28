@@ -23,15 +23,28 @@ data class YogaDay(
 )
 
 /**
+ * Which side to practice for an asymmetric ([YogaPose.bilateral]) asana.
+ * [None] is used for symmetric poses (or a single unscoped slot).
+ */
+enum class PoseSide {
+    None,
+    Right,
+    Left,
+}
+
+/**
  * A pose entry within a day. Holds the pose id (references [YogaPose.id]) and an optional
  * duration override — when null, the player uses the pose's [YogaPose.defaultDurationSec].
  *
  * [orderIndex] is the position in the session (0-indexed) — supports drag-to-reorder.
+ * [side] is [PoseSide.Right]/[PoseSide.Left] when the day expands a bilateral pose into
+ * two consecutive slots (right, then left).
  */
 data class DayPoseEntry(
     val poseId: String,
     val orderIndex: Int,
     val durationOverrideSec: Int?,
+    val side: PoseSide = PoseSide.None,
 )
 
 /**

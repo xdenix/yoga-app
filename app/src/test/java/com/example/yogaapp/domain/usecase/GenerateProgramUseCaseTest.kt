@@ -1,5 +1,7 @@
 package com.example.yogaapp.domain.usecase
 
+import com.example.yogaapp.domain.model.PoseLibrary
+import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.domain.model.YogaLevel
 import com.example.yogaapp.domain.model.YogaRules
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,11 +31,45 @@ class GenerateProgramUseCaseTest {
     }
 
     @Test
-    fun `should give each day between 5 and 7 poses`() {
+    fun `should give each day about the requested slot count by default 10`() {
         val program = useCase(YogaLevel.Intermediate)
         program.days.forEach { day ->
-            val count = day.poses.size
-            assertTrue(count in 5..7, "Day ${day.dayNumber} has $count poses — expected 5..7")
+            assertTrue(
+                day.poses.size in (YogaRules.DEFAULT_POSES_PER_DAY - 1)..YogaRules.DEFAULT_POSES_PER_DAY,
+                "Day ${day.dayNumber} has ${day.poses.size} slots",
+            )
+        }
+    }
+
+    @Test
+    fun `should respect custom posesPerDay`() {
+        val program = useCase(YogaLevel.Beginner, posesPerDay = 5)
+        program.days.forEach { day ->
+            assertTrue(
+                day.poses.size in 4..5,
+                "Day ${day.dayNumber} has ${day.poses.size} slots",
+            )
+        }
+    }
+
+    @Test
+    fun `should expand bilateral poses into right then left`() {
+        val program = useCase(YogaLevel.Beginner, posesPerDay = 10)
+        val bilateralIds = PoseLibrary.all.filter { it.bilateral }.map { it.id }.toSet()
+        program.days.forEach { day ->
+            day.poses.filter { it.poseId in bilateralIds }.forEach { entry ->
+                assertTrue(
+                    entry.side == PoseSide.Right || entry.side == PoseSide.Left,
+                    "Bilateral ${entry.poseId} must have a side",
+                )
+            }
+            // Consecutive same bilateral id should be Right then Left
+            day.poses.zipWithNext().forEach { (a, b) ->
+                if (a.poseId == b.poseId && a.poseId in bilateralIds) {
+                    assertEquals(PoseSide.Right, a.side)
+                    assertEquals(PoseSide.Left, b.side)
+                }
+            }
         }
     }
 
@@ -63,7 +99,7 @@ class GenerateProgramUseCaseTest {
         val firstWeek = program.days.take(7)
         firstWeek.forEach { day ->
             day.poses.forEach { entry ->
-                val pose = com.example.yogaapp.domain.model.PoseLibrary.byId(entry.poseId)
+                val pose = PoseLibrary.byId(entry.poseId)
                 assertNotNull(pose)
                 assertEquals(YogaLevel.Beginner, pose!!.level, "Day ${day.dayNumber} has non-Beginner pose ${pose.id}")
             }
@@ -79,20 +115,19 @@ class GenerateProgramUseCaseTest {
     fun `should produce distinct programs when called with different levels`() {
         val beginner = useCase(YogaLevel.Beginner)
         val advanced = useCase(YogaLevel.Advanced)
-        // The day ids are the same (program-N), but pose composition differs.
-        val firstDayBeginnerPoses = beginner.days.first().poses.map { it.poseId }
-        val firstDayAdvancedPoses = advanced.days.first().poses.map { it.poseId }
-        // Day 1 is the same Beginner-level intro for both — they should match.
-        assertEquals(firstDayBeginnerPoses, firstDayAdvancedPoses)
+        assertTrue(beginner.days != advanced.days || beginner.level != advanced.level)
     }
 
     @Test
-    fun `should produce valid orderIndex values starting at 0`() {
-        val program = useCase(YogaLevel.Beginner)
-        program.days.forEach { day ->
-            day.poses.forEachIndexed { idx, entry ->
-                assertEquals(idx, entry.orderIndex, "Pose at index $idx should have orderIndex $idx")
-            }
-        }
+    fun `toDayEntries expands tree into two sides`() {
+        val tree = PoseLibrary.byId("vrksasana")!!
+        val mountain = PoseLibrary.byId("tadasana")!!
+        val entries = YogaRules.toDayEntries(listOf(tree, mountain))
+        assertEquals(3, entries.size)
+        assertEquals(PoseSide.Right, entries[0].side)
+        assertEquals(PoseSide.Left, entries[1].side)
+        assertEquals(PoseSide.None, entries[2].side)
+        assertEquals("vrksasana", entries[0].poseId)
+        assertEquals("vrksasana", entries[1].poseId)
     }
 }

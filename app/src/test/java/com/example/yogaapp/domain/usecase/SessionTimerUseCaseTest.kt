@@ -28,7 +28,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `start should populate state with the first pose and its duration`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = null)
+        timer.start(poses, globalDurationSec = null, pauseBetweenSec = 0)
         val state = timer.state.value
         assertNotNull(state.current)
         assertEquals(0, state.currentIndex)
@@ -40,7 +40,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `globalDurationSec overrides pose defaults when set`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 60)
+        timer.start(poses, globalDurationSec = 60, pauseBetweenSec = 0)
         val state = timer.state.value
         assertEquals(60, state.remaining)
         assertEquals(60, state.poses.first().durationSec)
@@ -49,7 +49,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `totalDurationSec should sum pose durations`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         val state = timer.state.value
         // 2 poses × 30s each = 60s total
         assertEquals(60, state.totalDurationSec)
@@ -58,7 +58,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `setDurationForCurrentPose should override current pose duration`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         timer.setDurationForCurrentPose(90)
         val state = timer.state.value
         assertEquals(90, state.remaining)
@@ -68,7 +68,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `clamps pose duration to MIN_DURATION_SEC and MAX_DURATION_SEC`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         timer.setDurationForCurrentPose(5)
         assertEquals(com.example.yogaapp.domain.model.YogaRules.MIN_DURATION_SEC, timer.state.value.remaining)
         timer.setDurationForCurrentPose(1000)
@@ -78,7 +78,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `previous should decrement currentIndex without going below 0`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         timer.previous() // at index 0 — no-op
         assertEquals(0, timer.state.value.currentIndex)
     }
@@ -86,7 +86,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `pause and resume should toggle isRunning flag`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         assertTrue(timer.state.value.isRunning)
         timer.pause()
         assertFalse(timer.state.value.isRunning)
@@ -97,7 +97,7 @@ class SessionTimerUseCaseTest {
     @Test
     fun `cancel should reset state to empty`() = runTest {
         val poses = sampleSession()
-        timer.start(poses, globalDurationSec = 30)
+        timer.start(poses, globalDurationSec = 30, pauseBetweenSec = 0)
         timer.cancel()
         val state = timer.state.value
         assertEquals(0, state.poses.size)

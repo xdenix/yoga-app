@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.example.yogaapp.domain.model.DayPoseEntry
+import com.example.yogaapp.domain.model.PoseSide
 
 /**
  * Persisted day row. Belongs to either:
@@ -30,6 +31,7 @@ data class DayEntity(
 /**
  * Persisted pose entry within a day. [orderIndex] determines display order; supports
  * drag-to-reorder. [durationOverrideSec] null = use the pose's default duration.
+ * [side] stores [PoseSide] name for bilateral left/right slots.
  */
 @Entity(
     tableName = "day_pose_entries",
@@ -49,11 +51,13 @@ data class DayPoseEntryEntity(
     val poseId: String,
     val orderIndex: Int,
     val durationOverrideSec: Int?,
+    val side: String = PoseSide.None.name,
 ) {
     fun toDomain(): DayPoseEntry = DayPoseEntry(
         poseId = poseId,
         orderIndex = orderIndex,
         durationOverrideSec = durationOverrideSec,
+        side = runCatching { PoseSide.valueOf(side) }.getOrDefault(PoseSide.None),
     )
 
     companion object {
@@ -62,6 +66,7 @@ data class DayPoseEntryEntity(
             poseId = e.poseId,
             orderIndex = e.orderIndex,
             durationOverrideSec = e.durationOverrideSec,
+            side = e.side.name,
         )
     }
 }

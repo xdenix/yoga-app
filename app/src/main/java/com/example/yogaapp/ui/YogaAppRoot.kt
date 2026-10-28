@@ -78,8 +78,8 @@ fun YogaAppRoot(
                 DayScreen(
                     dayId = route.dayId,
                     onBack = { navController.popBackStack() },
-                    onSwapClick = { dayId, poseId ->
-                        navController.navigate(Route.SwapPicker(dayId, poseId))
+                    onSwapClick = { dayId, orderIndex ->
+                        navController.navigate(Route.SwapPicker(dayId, orderIndex))
                     },
                     onStartSession = { dayId ->
                         navController.navigate(Route.Session(dayId))
@@ -117,8 +117,8 @@ fun YogaAppRoot(
                             newPoseId,
                         )
                         navController.previousBackStackEntry?.savedStateHandle?.set(
-                            "swap_result_target_pose_id",
-                            route.poseIdToReplace,
+                            "swap_result_target_order_index",
+                            route.orderIndex,
                         )
                         navController.popBackStack()
                     },

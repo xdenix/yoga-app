@@ -22,7 +22,7 @@ import com.example.yogaapp.data.local.entity.SessionProgressEntity
         ProgramEntity::class,
         SessionProgressEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(RoomTypeConverters::class)

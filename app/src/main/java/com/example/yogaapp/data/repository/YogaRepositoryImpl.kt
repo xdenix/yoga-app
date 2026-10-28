@@ -82,8 +82,8 @@ class YogaRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun createProgram(level: YogaLevel): YogaProgram {
-        val generated = generateProgram(level)
+    override suspend fun createProgram(level: YogaLevel, posesPerDay: Int): YogaProgram {
+        val generated = generateProgram(level, posesPerDay)
         programDao.upsertProgram(
             ProgramEntity(
                 id = PROGRAM_ID,
@@ -142,13 +142,13 @@ class YogaRepositoryImpl @Inject constructor(
 
     override suspend fun createCustomDay(title: String, poseIds: List<String>): YogaDay {
         val customNumber = (System.currentTimeMillis() / 1000L).toInt()
+        val poseMap = allPoses().associateBy { it.id }
+        val resolved = poseIds.mapNotNull { poseMap[it] }
         val day = YogaDay(
             id = "custom-$customNumber",
             dayNumber = customNumber,
             title = title,
-            poses = poseIds.mapIndexed { idx, id ->
-                DayPoseEntry(poseId = id, orderIndex = idx, durationOverrideSec = null)
-            },
+            poses = com.example.yogaapp.domain.model.YogaRules.toDayEntries(resolved),
             isCustom = true,
         )
         dayDao.replaceDayAndEntries(
@@ -196,8 +196,11 @@ class YogaRepositoryImpl @Inject constructor(
     }
 
     /** Seeds the pose library on first launch (idempotent). Called from [com.example.yogaapp.YogaApp]. */
+    /**
+     * Seeds the pose library on first launch, and refreshes rows on later launches
+     * (REPLACE) so library fields like [YogaPose.bilateral] stay in sync with code.
+     */
     suspend fun seedPosesIfEmpty() {
-        if (poseDao.count() > 0) return
         poseDao.insertAll(PoseLibrary.all.map { PoseEntity.fromDomain(it) })
     }
 

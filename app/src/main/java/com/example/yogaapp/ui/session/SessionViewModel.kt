@@ -8,6 +8,7 @@ import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.audio.PracticeMelodyPlayer
 import com.example.yogaapp.data.datastore.SettingsDataStore
 import com.example.yogaapp.domain.model.DayPoseEntry
+import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.repository.YogaRepository
 import com.example.yogaapp.domain.usecase.RecordCompletionUseCase
@@ -84,14 +85,36 @@ class SessionViewModel @Inject constructor(
                 poseMap[entry.poseId]?.let { pose -> pose to entry }
             }
             val globalDuration = settingsDataStore.globalDurationSec.first()
-            timer.start(resolvedPoses, globalDurationSec = globalDuration)
+            val pauseBetween = settingsDataStore.pauseBetweenSec.first()
+            timer.start(
+                resolvedPoses,
+                globalDurationSec = globalDuration,
+                pauseBetweenSec = pauseBetween,
+            )
             collectTimerState()
             // Play gong + speak the first pose's description.
             audioPlayer.playGong()
-            audioPlayer.playDescription(resolvedPoses.first().first)
+            val first = resolvedPoses.first()
+            audioPlayer.playDescription(poseForSpeech(first.first, first.second.side))
             sessionActive = true
             if (!userPaused) melodyPlayer.play(currentMelody)
         }
+    }
+
+    private fun poseForSpeech(pose: YogaPose, side: PoseSide): YogaPose = when (side) {
+        PoseSide.Right -> pose.copy(
+            ruName = "${pose.ruName} (справа)",
+            ruDescription = "Правая сторона. ${pose.ruDescription}",
+            enName = "${pose.enName} (right)",
+            enDescription = "Right side. ${pose.enDescription}",
+        )
+        PoseSide.Left -> pose.copy(
+            ruName = "${pose.ruName} (слева)",
+            ruDescription = "Левая сторона. ${pose.ruDescription}",
+            enName = "${pose.enName} (left)",
+            enDescription = "Left side. ${pose.enDescription}",
+        )
+        PoseSide.None -> pose
     }
 
     private fun collectTimerState() {
@@ -109,16 +132,16 @@ class SessionViewModel @Inject constructor(
                         elapsedSec = timerState.elapsedSec,
                         totalSec = timerState.totalDurationSec,
                         isPaused = !timerState.isRunning,
+                        isRestPause = timerState.isPause,
                     )
                 }
-                // When the pose changes, play the gong + describe the new pose.
+                // When the pose changes, play the gong + describe the new pose (not during rest pause).
                 val currentPose = timerState.current
-                if (currentPose != null) {
-                    // (Re-)speak when currentIndex changes — guarded by tracking the last spoken idx.
+                if (currentPose != null && !timerState.isPause) {
                     if (lastSpokenIndex != timerState.currentIndex) {
                         lastSpokenIndex = timerState.currentIndex
                         audioPlayer.playGong()
-                        audioPlayer.playDescription(currentPose.pose)
+                        audioPlayer.playDescription(poseForSpeech(currentPose.pose, currentPose.entry.side))
                     }
                 }
             }
@@ -144,7 +167,7 @@ class SessionViewModel @Inject constructor(
             SessionEvent.ListenAgain -> {
                 viewModelScope.launch {
                     val current = timer.state.value.current ?: return@launch
-                    audioPlayer.playDescription(current.pose)
+                    audioPlayer.playDescription(poseForSpeech(current.pose, current.entry.side))
                 }
             }
             SessionEvent.StopAudio -> audioPlayer.stop()
@@ -191,6 +214,7 @@ sealed interface SessionUiState {
         val elapsedSec: Int,
         val totalSec: Int,
         val isPaused: Boolean,
+        val isRestPause: Boolean = false,
     ) : SessionUiState
     data object Finished : SessionUiState
     data class Error(val messageRes: Int) : SessionUiState

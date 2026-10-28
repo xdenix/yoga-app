@@ -7,6 +7,8 @@ import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.SettingsDataStore
 import com.example.yogaapp.data.datastore.ThemeMode
+import com.example.yogaapp.domain.model.YogaRules
+import com.example.yogaapp.domain.usecase.CreateProgramUseCase
 import com.example.yogaapp.domain.usecase.ResetProgressUseCase
 import com.example.yogaapp.domain.util.AppDispatchers
 import com.example.yogaapp.domain.util.AppError
@@ -17,6 +19,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -27,23 +30,40 @@ class SettingsViewModel @Inject constructor(
     private val settingsDataStore: SettingsDataStore,
     private val audioPlayer: PoseAudioPlayer,
     private val resetProgressUseCase: ResetProgressUseCase,
+    private val createProgram: CreateProgramUseCase,
     private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
+    private data class CoreSettings(
+        val themeMode: ThemeMode,
+        val dynamicColor: Boolean,
+        val audioMode: AudioMode,
+        val globalDurationSec: Int,
+        val melody: PracticeMelody,
+    )
+
     val uiState: StateFlow<SettingsUiState> = combine(
-        settingsDataStore.themeMode,
-        settingsDataStore.dynamicColor,
-        settingsDataStore.audioMode,
-        settingsDataStore.globalDurationSec,
-        settingsDataStore.practiceMelody,
-    ) { themeMode, dynamicColor, audioMode, globalDuration, melody ->
+        combine(
+            settingsDataStore.themeMode,
+            settingsDataStore.dynamicColor,
+            settingsDataStore.audioMode,
+            settingsDataStore.globalDurationSec,
+            settingsDataStore.practiceMelody,
+        ) { themeMode, dynamicColor, audioMode, globalDuration, melody ->
+            CoreSettings(themeMode, dynamicColor, audioMode, globalDuration, melody)
+        },
+        settingsDataStore.posesPerDay,
+        settingsDataStore.pauseBetweenSec,
+    ) { core, posesPerDay, pauseBetween ->
         SettingsUiState(
-            themeMode = themeMode,
-            dynamicColor = dynamicColor,
-            audioMode = audioMode,
-            globalDurationSec = globalDuration,
+            themeMode = core.themeMode,
+            dynamicColor = core.dynamicColor,
+            audioMode = core.audioMode,
+            globalDurationSec = core.globalDurationSec,
+            posesPerDay = posesPerDay,
+            pauseBetweenSec = pauseBetween,
             hasAudioPack = audioPlayer.hasAudioPack,
-            melody = melody,
+            melody = core.melody,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -68,6 +88,19 @@ class SettingsViewModel @Inject constructor(
 
     fun setGlobalDuration(sec: Int) {
         viewModelScope.launch { settingsDataStore.setGlobalDuration(sec) }
+    }
+
+    fun setPosesPerDay(count: Int) {
+        viewModelScope.launch(dispatchers.io) {
+            settingsDataStore.setPosesPerDay(count)
+            val level = settingsDataStore.chosenLevel.first() ?: return@launch
+            createProgram(level, count)
+            _effects.send(SettingsEffect.Snackbar(com.example.yogaapp.R.string.settings_plan_regenerated))
+        }
+    }
+
+    fun setPauseBetweenSec(sec: Int) {
+        viewModelScope.launch { settingsDataStore.setPauseBetweenSec(sec) }
     }
 
     fun setMelody(melody: PracticeMelody) {
@@ -100,7 +133,9 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.Dark,
     val dynamicColor: Boolean = false,
     val audioMode: AudioMode = AudioMode.Tts,
-    val globalDurationSec: Int = 30,
+    val globalDurationSec: Int = YogaRules.DEFAULT_GLOBAL_DURATION_SEC,
+    val posesPerDay: Int = YogaRules.DEFAULT_POSES_PER_DAY,
+    val pauseBetweenSec: Int = YogaRules.DEFAULT_PAUSE_BETWEEN_SEC,
     val hasAudioPack: Boolean = false,
     val melody: PracticeMelody = PracticeMelody.SufiMorning,
 )

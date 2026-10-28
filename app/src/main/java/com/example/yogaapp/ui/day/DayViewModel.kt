@@ -4,13 +4,14 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.yogaapp.data.datastore.SettingsDataStore
+import com.example.yogaapp.domain.model.DayPoseEntry
+import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.domain.model.YogaDay
 import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.repository.YogaRepository
 import com.example.yogaapp.domain.util.AppDispatchers
 import com.example.yogaapp.domain.util.AppError
 import com.example.yogaapp.domain.util.ErrorKind
-import com.example.yogaapp.domain.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,17 +32,12 @@ class DayViewModel @Inject constructor(
 
     private val dayId: String = handle.get<String>("dayId").orEmpty()
 
-    /** Captured swap result emitted by the LibraryScreen picker (set via NavBackStackEntry). */
-    private val swapResultPoseId = MutableStateFlow<String?>(null)
-    private val swapResultTarget = MutableStateFlow<String?>(null)
-
     private val _uiState = MutableStateFlow<DayUiState>(DayUiState.Loading)
     val uiState: StateFlow<DayUiState> = _uiState.asStateFlow()
 
     private val _effects = Channel<DayEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    /** Most recent loaded day; used so reorder/swap edits don't require a DB roundtrip. */
     private var currentDay: YogaDay? = null
 
     init {
@@ -52,10 +47,8 @@ class DayViewModel @Inject constructor(
 
     private fun loadDay() {
         viewModelScope.launch(dispatchers.io) {
-            // Fetch poses once so we can resolve ids → names quickly.
             val allPoses = repository.allPoses()
             val poseMap = allPoses.associateBy { it.id }
-            // Observe the program (or custom days) so we get live updates.
             val program = repository.observeProgram().first()
             val customDays = repository.observeCustomDays().first()
             val day = program?.days?.firstOrNull { it.id == dayId }
@@ -75,17 +68,16 @@ class DayViewModel @Inject constructor(
     }
 
     private fun observeSwapResult(handle: SavedStateHandle) {
-        // Read once on init; the result is set by the SwapPicker route's onPicked callback.
         handle.getStateFlow<String?>("swap_result_new_pose_id", null)
             .let { flow ->
                 viewModelScope.launch {
                     flow.collect { newPoseId ->
                         if (newPoseId != null) {
-                            val target = handle.get<String?>("swap_result_target_pose_id")
-                            if (target != null) {
-                                performSwap(target, newPoseId)
+                            val targetOrder = handle.get<Int?>("swap_result_target_order_index")
+                            if (targetOrder != null) {
+                                performSwap(targetOrder, newPoseId)
                                 handle.remove<String?>("swap_result_new_pose_id")
-                                handle.remove<String?>("swap_result_target_pose_id")
+                                handle.remove<Int?>("swap_result_target_order_index")
                             }
                         }
                     }
@@ -96,8 +88,8 @@ class DayViewModel @Inject constructor(
     fun onEvent(event: DayEvent) {
         when (event) {
             is DayEvent.Reorder -> reorder(event.fromIndex, event.toIndex)
-            is DayEvent.SetDuration -> setDuration(event.poseId, event.durationSec)
-            is DayEvent.DeletePose -> deletePose(event.poseId)
+            is DayEvent.SetDuration -> setDuration(event.orderIndex, event.durationSec)
+            is DayEvent.DeletePose -> deletePose(event.orderIndex)
             is DayEvent.ResetOverrides -> resetOverrides()
             is DayEvent.SkipDay -> skipDay()
             DayEvent.Retry -> loadDay()
@@ -118,10 +110,10 @@ class DayViewModel @Inject constructor(
         persistDay(updatedDay)
     }
 
-    private fun setDuration(poseId: String, durationSec: Int) {
+    private fun setDuration(orderIndex: Int, durationSec: Int) {
         val state = _uiState.value as? DayUiState.Content ?: return
         val updatedList = state.day.poses.map { e ->
-            if (e.poseId == poseId) e.copy(durationOverrideSec = durationSec) else e
+            if (e.orderIndex == orderIndex) e.copy(durationOverrideSec = durationSec) else e
         }
         val updatedDay = state.day.copy(poses = updatedList)
         currentDay = updatedDay
@@ -129,10 +121,10 @@ class DayViewModel @Inject constructor(
         persistDay(updatedDay)
     }
 
-    private fun deletePose(poseId: String) {
+    private fun deletePose(orderIndex: Int) {
         val state = _uiState.value as? DayUiState.Content ?: return
         val updatedList = state.day.poses
-            .filterNot { it.poseId == poseId }
+            .filterNot { it.orderIndex == orderIndex }
             .mapIndexed { idx, e -> e.copy(orderIndex = idx) }
         val updatedDay = state.day.copy(poses = updatedList)
         currentDay = updatedDay
@@ -140,12 +132,33 @@ class DayViewModel @Inject constructor(
         persistDay(updatedDay)
     }
 
-    private fun performSwap(targetPoseId: String, newPoseId: String) {
+    private fun performSwap(targetOrderIndex: Int, newPoseId: String) {
         val state = _uiState.value as? DayUiState.Content ?: return
-        val updatedList = state.day.poses.map { e ->
-            if (e.poseId == targetPoseId) e.copy(poseId = newPoseId) else e
+        val newPose = state.poseMap[newPoseId] ?: return
+        val list = state.day.poses.toMutableList()
+        val idx = list.indexOfFirst { it.orderIndex == targetOrderIndex }
+        if (idx < 0) return
+        val old = list[idx]
+        if (newPose.bilateral && old.side == PoseSide.None) {
+            list.removeAt(idx)
+            list.add(
+                idx,
+                DayPoseEntry(newPoseId, 0, old.durationOverrideSec, PoseSide.Right),
+            )
+            list.add(
+                idx + 1,
+                DayPoseEntry(newPoseId, 0, old.durationOverrideSec, PoseSide.Left),
+            )
+        } else {
+            val side = when {
+                !newPose.bilateral -> PoseSide.None
+                old.side != PoseSide.None -> old.side
+                else -> PoseSide.Right
+            }
+            list[idx] = old.copy(poseId = newPoseId, side = side)
         }
-        val updatedDay = state.day.copy(poses = updatedList)
+        val reindexed = list.mapIndexed { i, e -> e.copy(orderIndex = i) }
+        val updatedDay = state.day.copy(poses = reindexed)
         currentDay = updatedDay
         _uiState.value = state.copy(day = updatedDay)
         persistDay(updatedDay)
@@ -166,7 +179,6 @@ class DayViewModel @Inject constructor(
     private fun skipDay() {
         val state = _uiState.value as? DayUiState.Content ?: return
         viewModelScope.launch(dispatchers.io) {
-            // Reuse the repository's skip logic (sets isSkipped + advances current day).
             repository.skipDay(state.day.dayNumber, autoShift = true)
             _effects.send(DayEffect.Snackbar(com.example.yogaapp.R.string.day_skip))
         }
@@ -212,8 +224,8 @@ sealed interface DayUiState {
 
 sealed interface DayEvent {
     data class Reorder(val fromIndex: Int, val toIndex: Int) : DayEvent
-    data class SetDuration(val poseId: String, val durationSec: Int) : DayEvent
-    data class DeletePose(val poseId: String) : DayEvent
+    data class SetDuration(val orderIndex: Int, val durationSec: Int) : DayEvent
+    data class DeletePose(val orderIndex: Int) : DayEvent
     data object ResetOverrides : DayEvent
     data object SkipDay : DayEvent
     data object Retry : DayEvent

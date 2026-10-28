@@ -135,10 +135,47 @@ fun SettingsScreen(
             SectionHeader(stringResource(R.string.settings_section_melody))
             MelodyRow(current = state.melody, onSelect = viewModel::setMelody)
             HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_global_duration))
+            SectionHeader(stringResource(R.string.settings_section_session))
+            Text(
+                text = stringResource(R.string.settings_poses_per_day),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Slider(
+                value = state.posesPerDay.toFloat(),
+                onValueChange = { viewModel.setPosesPerDay(it.toInt()) },
+                valueRange = YogaRules.MIN_POSES_PER_DAY.toFloat()..YogaRules.MAX_POSES_PER_DAY.toFloat(),
+                steps = YogaRules.MAX_POSES_PER_DAY - YogaRules.MIN_POSES_PER_DAY - 1,
+            )
+            Text(
+                text = stringResource(R.string.settings_global_duration),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
             DurationSlider(
                 value = state.globalDurationSec,
                 onChange = viewModel::setGlobalDuration,
+            )
+            Text(
+                text = stringResource(R.string.settings_pause_between),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Slider(
+                value = state.pauseBetweenSec.toFloat(),
+                onValueChange = { viewModel.setPauseBetweenSec(it.toInt()) },
+                valueRange = YogaRules.MIN_PAUSE_SEC.toFloat()..YogaRules.MAX_PAUSE_SEC.toFloat(),
+                steps = 23,
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_progress))

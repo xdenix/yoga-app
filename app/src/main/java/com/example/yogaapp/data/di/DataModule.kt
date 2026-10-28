@@ -3,6 +3,7 @@ package com.example.yogaapp.data.di
 import android.content.Context
 import androidx.room.Room
 import com.example.yogaapp.data.local.YogaDatabase
+import com.example.yogaapp.data.local.YogaMigrations
 import com.example.yogaapp.data.local.dao.DayDao
 import com.example.yogaapp.data.local.dao.PoseDao
 import com.example.yogaapp.data.local.dao.ProgramDao
@@ -35,6 +36,8 @@ abstract class DataModule {
                 YogaDatabase::class.java,
                 YogaDatabase.DATABASE_NAME,
             )
+                .addMigrations(YogaMigrations.MIGRATION_1_2)
+                .fallbackToDestructiveMigration()
                 .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
 

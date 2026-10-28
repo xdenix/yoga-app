@@ -27,7 +27,10 @@ interface YogaRepository {
     // ---- Program ----
     fun observeProgram(): Flow<YogaProgram?>
     suspend fun getProgram(): YogaProgram?
-    suspend fun createProgram(level: YogaLevel): YogaProgram
+    suspend fun createProgram(
+        level: YogaLevel,
+        posesPerDay: Int = com.example.yogaapp.domain.model.YogaRules.DEFAULT_POSES_PER_DAY,
+    ): YogaProgram
     suspend fun updateProgramDay(day: YogaDay)
     suspend fun setCurrentDay(dayNumber: Int)
     suspend fun skipDay(dayNumber: Int, autoShift: Boolean)

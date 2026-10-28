@@ -48,8 +48,8 @@ object PoseLibrary {
             sanskrit = "Vrksasana",
             ru = "Поза Дерева",
             en = "Tree Pose",
-            ruDesc = "Перенесите вес на левую стопу. Правую стопу поместите на внутреннюю поверхность левого бедра. Ладони сложите перед грудью в намасте или поднимите над головой.",
-            enDesc = "Shift weight to your left foot. Place the right foot on the inner left thigh. Bring palms together at the chest in prayer position or extend overhead.",
+            ruDesc = "Перенесите вес на опорную стопу. Стопу свободной ноги поместите на внутреннюю поверхность бедра. Ладони сложите перед грудью в намасте или поднимите над головой.",
+            enDesc = "Shift weight to the standing foot. Place the free foot on the inner thigh. Bring palms together at the chest in prayer position or extend overhead.",
             level = YogaLevel.Beginner,
             focuses = listOf(BodyFocus.Standing, BodyFocus.Balance),
             duration = 30,
@@ -62,6 +62,7 @@ object PoseLibrary {
                 lowerArmAngle = 0f,
                 armsInPrayer = true,
             ),
+            bilateral = true,
         ),
         pose(
             id = "adho_mukha_svanasana",
@@ -197,6 +198,7 @@ object PoseLibrary {
                 lowerArmAngle = 0f,
                 armsOverhead = true,
             ),
+            bilateral = true,
         ),
         pose(
             id = "virabhadrasana_2",
@@ -216,14 +218,15 @@ object PoseLibrary {
                 upperArmAngle = 90f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "utthita_trikonasana",
             sanskrit = "Utthita Trikonasana",
             ru = "Поза Треугольника",
             en = "Triangle Pose",
-            ruDesc = "Ноги широко, правая стопа развёрнута наружу. Наклонитесь вправо, правую руку опустите к голени, левую поднимите вверх. Таз и плечи в одной плоскости.",
-            enDesc = "Step feet wide, right foot turned out. Bend to the right, lowering your right hand to your shin and lifting the left arm up. Hips and shoulders in one plane.",
+            ruDesc = "Ноги широко, опорная стопа развёрнута наружу. Наклонитесь в сторону, нижнюю руку опустите к голени, верхнюю поднимите вверх. Таз и плечи в одной плоскости.",
+            enDesc = "Step feet wide, front foot turned out. Bend to the side, lowering the bottom hand to your shin and lifting the top arm up. Hips and shoulders in one plane.",
             level = YogaLevel.Beginner,
             focuses = listOf(BodyFocus.Standing, BodyFocus.ForwardFold),
             duration = 30,
@@ -235,6 +238,7 @@ object PoseLibrary {
                 upperArmAngle = 90f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "setu_bandhasana",
@@ -319,8 +323,8 @@ object PoseLibrary {
             sanskrit = "Anjaneyasana",
             ru = "Поза Низкого Выпада",
             en = "Low Lunge",
-            ruDesc = "Из собаки мордой вниз шагните правой ногой вперёд. Левое колено на полу, таз опустите к полу. Руки поднимите вверх, прогнитесь назад.",
-            enDesc = "From downward dog, step your right foot forward. Left knee on the floor, lower hips toward the floor. Lift arms upward, gently backbend.",
+            ruDesc = "Из собаки мордой вниз шагните одной ногой вперёд. Заднее колено на полу, таз опустите к полу. Руки поднимите вверх, прогнитесь назад.",
+            enDesc = "From downward dog, step one foot forward. Back knee on the floor, lower hips toward the floor. Lift arms upward, gently backbend.",
             level = YogaLevel.Beginner,
             focuses = listOf(BodyFocus.Standing, BodyFocus.Backbend),
             duration = 30,
@@ -333,6 +337,7 @@ object PoseLibrary {
                 lowerArmAngle = 0f,
                 armsOverhead = true,
             ),
+            bilateral = true,
         ),
 
         // ============== INTERMEDIATE (15 poses) ==============
@@ -355,6 +360,7 @@ object PoseLibrary {
                 lowerArmAngle = 0f,
                 armsOverhead = true,
             ),
+            bilateral = true,
         ),
         pose(
             id = "ardha_chandrasana",
@@ -374,6 +380,7 @@ object PoseLibrary {
                 upperArmAngle = 90f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "utkatasana",
@@ -451,6 +458,7 @@ object PoseLibrary {
                 upperArmAngle = 0f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "salabhasana",
@@ -529,6 +537,7 @@ object PoseLibrary {
                 lowerArmAngle = 90f,
                 legsCrossed = true,
             ),
+            bilateral = true,
         ),
         pose(
             id = "paschimottanasana",
@@ -567,6 +576,7 @@ object PoseLibrary {
                 upperArmAngle = 0f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "baddha_konasana",
@@ -605,6 +615,7 @@ object PoseLibrary {
                 upperArmAngle = 90f,
                 lowerArmAngle = 90f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "prasarita_padottanasana",
@@ -760,6 +771,7 @@ object PoseLibrary {
                 lowerArmAngle = 90f,
                 armsOverhead = true,
             ),
+            bilateral = true,
         ),
         pose(
             id = "eka_pada_rajakapotasana",
@@ -779,6 +791,7 @@ object PoseLibrary {
                 upperArmAngle = 0f,
                 lowerArmAngle = 0f,
             ),
+            bilateral = true,
         ),
         pose(
             id = "mayurasana",
@@ -862,6 +875,7 @@ object PoseLibrary {
         focuses: List<BodyFocus>,
         duration: Int,
         spec: PoseSpec,
+        bilateral: Boolean = false,
     ): YogaPose = YogaPose(
         id = id,
         sanskritName = sanskrit,
@@ -874,5 +888,6 @@ object PoseLibrary {
         defaultDurationSec = duration,
         spec = spec,
         audioAssetName = null, // TTS by default; audio pack can populate these.
+        bilateral = bilateral,
     )
 }

@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.yogaapp.R
 import com.example.yogaapp.data.audio.PracticeMelody
+import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.ui.components.LoadingState
 import com.example.yogaapp.ui.components.PoseFigure
 import com.example.yogaapp.ui.components.title
@@ -132,29 +133,39 @@ private fun RunningContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(R.string.session_pose_n_of_m, state.currentIndex + 1, state.total),
+            text = if (state.isRestPause) {
+                stringResource(R.string.session_pause_between)
+            } else {
+                stringResource(R.string.session_pose_n_of_m, state.currentIndex + 1, state.total)
+            },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (current != null) {
             PoseFigure(pose = current.pose, size = 140.dp)
             Text(
-                text = current.pose.ruName,
+                text = if (state.isRestPause) {
+                    stringResource(R.string.session_pause_title)
+                } else {
+                    sessionPoseTitle(current.pose.ruName, current.entry.side)
+                },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = current.pose.sanskritName,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Card(modifier = Modifier.fillMaxWidth()) {
+            if (!state.isRestPause) {
                 Text(
-                    text = current.pose.ruDescription,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = current.pose.sanskritName,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(12.dp),
                 )
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = current.pose.ruDescription,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
             }
             Text(
                 text = stringResource(R.string.session_melody),
@@ -256,4 +267,11 @@ private fun FinishedContent(
             Text(stringResource(R.string.action_close))
         }
     }
+}
+
+@Composable
+private fun sessionPoseTitle(ruName: String, side: PoseSide): String = when (side) {
+    PoseSide.Right -> stringResource(R.string.pose_title_side, ruName, stringResource(R.string.pose_side_right))
+    PoseSide.Left -> stringResource(R.string.pose_title_side, ruName, stringResource(R.string.pose_side_left))
+    PoseSide.None -> ruName
 }

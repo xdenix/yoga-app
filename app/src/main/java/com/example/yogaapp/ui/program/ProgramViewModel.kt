@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -84,7 +85,10 @@ class ProgramViewModel @Inject constructor(
         if (program == null) {
             return if (level != null) {
                 // Lazy-create the program on first observation when the level is known.
-                viewModelScope.launch(dispatchers.io) { createProgram(level) }
+                viewModelScope.launch(dispatchers.io) {
+                    val count = settingsDataStore.posesPerDay.first()
+                    createProgram(level, count)
+                }
                 ProgramUiState.Loading
             } else {
                 ProgramUiState.Empty

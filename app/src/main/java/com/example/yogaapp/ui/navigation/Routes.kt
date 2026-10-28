@@ -39,9 +39,9 @@ sealed interface Route {
 
     /**
      * Swap picker — invoked from DayDetail when the user taps "Заменить" on a pose.
-     * [dayId] identifies the day being edited; [poseIdToReplace] is the entry to swap out.
-     * After picking, the user is returned to DayDetail with the new pose substituted in.
+     * [dayId] identifies the day being edited; [orderIndex] is the entry slot to swap out
+     * (unique even when a bilateral pose appears twice as right/left).
      */
     @Serializable
-    data class SwapPicker(val dayId: String, val poseIdToReplace: String) : Route
+    data class SwapPicker(val dayId: String, val orderIndex: Int) : Route
 }

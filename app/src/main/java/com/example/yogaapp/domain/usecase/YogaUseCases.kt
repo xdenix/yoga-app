@@ -21,10 +21,11 @@ class GetCurrentProgramUseCase @Inject constructor(
 
 class CreateProgramUseCase @Inject constructor(
     private val repository: YogaRepository,
-    private val generateProgram: GenerateProgramUseCase,
 ) {
-    suspend operator fun invoke(level: com.example.yogaapp.domain.model.YogaLevel) =
-        repository.createProgram(level)
+    suspend operator fun invoke(
+        level: com.example.yogaapp.domain.model.YogaLevel,
+        posesPerDay: Int = com.example.yogaapp.domain.model.YogaRules.DEFAULT_POSES_PER_DAY,
+    ) = repository.createProgram(level, posesPerDay)
 }
 
 class UpdateProgramDayUseCase @Inject constructor(

@@ -33,6 +33,7 @@ data class PoseEntity(
     val armsOverhead: Boolean,
     val armsInPrayer: Boolean,
     val audioAssetName: String?,
+    val bilateral: Boolean = false,
 ) {
     fun toDomain(): YogaPose = YogaPose(
         id = id,
@@ -57,6 +58,7 @@ data class PoseEntity(
             armsInPrayer = armsInPrayer,
         ),
         audioAssetName = audioAssetName,
+        bilateral = bilateral,
     )
 
     companion object {
@@ -81,6 +83,7 @@ data class PoseEntity(
             armsOverhead = p.spec.armsOverhead,
             armsInPrayer = p.spec.armsInPrayer,
             audioAssetName = p.audioAssetName,
+            bilateral = p.bilateral,
         )
     }
 }
