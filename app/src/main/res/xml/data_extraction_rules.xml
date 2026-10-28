@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!-- Android 12+ device-transfer rules — keep user data, drop cache. -->
+    <cloud-backup>
+        <include domain="sharedpref" path="yoga_app_settings.preferences_pbk" />
+        <include domain="database" path="yoga-app.db" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="yoga_app_settings.preferences_pbk" />
+        <include domain="database" path="yoga-app.db" />
+    </device-transfer>
+</data-extraction-rules>

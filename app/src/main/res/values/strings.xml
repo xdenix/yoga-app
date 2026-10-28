@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Йога — 30 дней</string>
+    <string name="splash_brand">ДенисМурыс-Йога</string>
+
+    <!-- Common actions -->
+    <string name="action_retry">Повторить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_create">Создать</string>
+    <string name="action_ok">ОК</string>
+    <string name="action_back">Назад</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_start_session">Начать сессию</string>
+    <string name="action_pause">Пауза</string>
+    <string name="action_resume">Продолжить</string>
+    <string name="action_skip">Пропустить</string>
+    <string name="action_previous">Предыдущая</string>
+    <string name="action_next">Следующая</string>
+    <string name="action_finish">Завершить</string>
+    <string name="action_listen">Прослушать</string>
+    <string name="action_stop_audio">Стоп</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_add">Добавить</string>
+    <string name="action_edit">Редактировать</string>
+    <string name="action_swap">Заменить</string>
+    <string name="action_done">Готово</string>
+
+    <!-- Errors -->
+    <string name="error_database">Не удалось сохранить данные. Попробуйте ещё раз.</string>
+    <string name="error_network">Нет связи с сервером. Проверьте подключение.</string>
+    <string name="error_not_found">Объект не найден.</string>
+    <string name="error_validation">Проверьте введённые данные.</string>
+    <string name="error_unknown">Что-то пошло не так. Попробуйте позже.</string>
+
+    <!-- Levels -->
+    <string name="level_beginner">Новичок</string>
+    <string name="level_intermediate">Средний</string>
+    <string name="level_advanced">Продвинутый</string>
+
+    <!-- Body focus -->
+    <string name="focus_standing">Стоя</string>
+    <string name="focus_seated">Сидя</string>
+    <string name="focus_balance">Баланс</string>
+    <string name="focus_twist">Скрутка</string>
+    <string name="focus_backbend">Прогиб</string>
+    <string name="focus_forward_fold">Наклон</string>
+    <string name="focus_core">Кор</string>
+    <string name="focus_rest">Расслабление</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Пропустить</string>
+    <string name="onboarding_next">Далее</string>
+    <string name="onboarding_start">Начать практику</string>
+    <string name="onboarding_page1_title">Выберите свой темп</string>
+    <string name="onboarding_page1_body">30-дневный план подстраивается под ваш уровень — от первых асан до продвинутых поз.</string>
+    <string name="onboarding_page2_title">Полная автономия</string>
+    <string name="onboarding_page2_body">Приложение работает полностью офлайн — без интернета, без подписок. Всё хранится на вашем устройстве.</string>
+    <string name="onboarding_page3_title">Голос и звук</string>
+    <string name="onboarding_page3_body">Каждая поза озвучена — описание можно слушать во время выполнения. По умолчанию синтез речи; опционально — записанный голос.</string>
+    <string name="onboarding_choose_level">Выберите уровень</string>
+    <string name="onboarding_choose_level_body">От этого зависит сложность и длительность 30-дневного плана.</string>
+
+    <!-- Program plan -->
+    <string name="program_title">Ваш план на 30 дней</string>
+    <string name="program_progress">Прогресс: %1$d из 30 дней</string>
+    <string name="program_day_template">День %1$d</string>
+    <string name="program_poses_count_template">%1$d поз</string>
+    <string name="program_duration_template">%1$s мин</string>
+    <string name="program_today">Сегодня</string>
+    <string name="program_skipped">Пропущен</string>
+    <string name="program_completed">Завершён</string>
+    <string name="program_empty_title">План не создан</string>
+    <string name="program_empty_body">Выберите уровень, чтобы построить ваш 30-дневный план.</string>
+    <string name="program_select_level">Выбрать уровень</string>
+    <string name="program_custom_days">Свои дни</string>
+    <string name="program_create_custom_day">Создать свой день</string>
+
+    <!-- Day detail -->
+    <string name="day_title_template">День %1$d: %2$s</string>
+    <string name="day_poses_in_session">Позы в сессии</string>
+    <string name="day_drag_to_reorder">Зажмите и перетащите, чтобы изменить порядок</string>
+    <string name="day_swap_hint">Нажмите «Заменить», чтобы выбрать другую позу</string>
+    <string name="day_skip">Пропустить день</string>
+    <string name="day_skip_with_shift">Пропустить и сдвинуть план</string>
+    <string name="day_reset_overrides">Сбросить изменения</string>
+    <string name="day_duration_template">%1$s на позу</string>
+    <string name="day_global_duration">Длительность по умолчанию</string>
+    <string name="day_per_pose_durations">Длительность каждой позы</string>
+    <string name="day_total_duration">Общая длительность: %1$s</string>
+
+    <!-- Session player -->
+    <string name="session_title">Сессия</string>
+    <string name="session_pose_n_of_m">Поза %1$d из %2$d</string>
+    <string name="session_remaining">%1$dс</string>
+    <string name="session_progress_template">%1$d%%</string>
+    <string name="session_finished_title">Сессия завершена</string>
+    <string name="session_finished_body">Отличная практика! Готовы отметить день как завершённый?</string>
+    <string name="session_mark_done">Отметить выполненным</string>
+    <string name="session_pose_description">Описание позы</string>
+    <string name="session_audio_loading">Подготовка звука…</string>
+    <string name="session_no_audio_pack">Аудио-пак не установлен. Используется синтез речи.</string>
+
+    <!-- Pose library -->
+    <string name="library_title">Библиотека поз</string>
+    <string name="library_filter_all">Все</string>
+    <string name="library_filter_beginner">Новичок</string>
+    <string name="library_filter_intermediate">Средний</string>
+    <string name="library_filter_advanced">Продвинутый</string>
+    <string name="library_add_to_day">Добавить в день</string>
+    <string name="library_swap_into_day">Заменить в день</string>
+
+    <!-- Custom day -->
+    <string name="customday_title">Свой день</string>
+    <string name="customday_name">Название</string>
+    <string name="customday_name_hint">Например, «Утренний комплекс»</string>
+    <string name="customday_select_poses">Выберите позы</string>
+    <string name="customday_selected_count">Выбрано: %1$d</string>
+    <string name="customday_save">Сохранить день</string>
+    <string name="customday_empty">Выберите хотя бы одну позу</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_appearance">Оформление</string>
+    <string name="settings_theme_system">Как в системе</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная (по умолчанию)</string>
+    <string name="settings_dynamic_color_title">Динамические цвета</string>
+    <string name="settings_dynamic_color_subtitle">Подстраивать палитру под обои (Android 12+)</string>
+    <string name="settings_section_audio">Аудио</string>
+    <string name="settings_section_melody">Мелодия для практики</string>
+    <string name="melody_off">Без музыки</string>
+    <string name="melody_morning">Утро</string>
+    <string name="melody_breath">Дыхание</string>
+    <string name="melody_river">Река</string>
+    <string name="melody_evening">Вечер</string>
+    <string name="session_melody">Мелодия</string>
+    <string name="settings_audio_mode_tts">Синтез речи (по умолчанию)</string>
+    <string name="settings_audio_mode_mp3">Записанный голос (требует аудио-пак)</string>
+    <string name="settings_audio_pack_status_installed">Аудио-пак установлен</string>
+    <string name="settings_audio_pack_status_missing">Аудио-пак не найден. Используется синтез речи.</string>
+    <string name="settings_audio_pack_hint">Положите файлы &lt;poseId&gt;.mp3 в папку приложения files/audio-pack/</string>
+    <string name="settings_global_duration">Длительность позы по умолчанию</string>
+    <string name="settings_global_duration_value">%1$d секунд</string>
+    <string name="settings_section_progress">Прогресс</string>
+    <string name="settings_reset_progress">Сбросить прогресс плана</string>
+    <string name="settings_reset_progress_warning">Это удалит историю завершённых сессий и вернёт к 1-му дню.</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_version">Версия</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_loading">Загрузка</string>
+    <string name="cd_back">Назад</string>
+    <string name="cd_settings">Настройки</string>
+    <string name="cd_create_day">Создать свой день</string>
+    <string name="cd_start_session">Начать сессию</string>
+    <string name="cd_pause">Пауза</string>
+    <string name="cd_resume">Продолжить</string>
+    <string name="cd_skip_pose">Пропустить позу</string>
+    <string name="cd_prev_pose">Предыдущая поза</string>
+    <string name="cd_next_pose">Следующая поза</string>
+    <string name="cd_listen_audio">Прослушать описание</string>
+    <string name="cd_stop_audio">Остановить звук</string>
+    <string name="cd_pose_figure">Иллюстрация позы</string>
+    <string name="cd_day_template">День %1$d</string>
+    <string name="cd_pose_card_template">Поза: %1$s</string>
+    <string name="cd_page_indicator_selected">Текущая страница</string>
+    <string name="cd_page_indicator_unselected">Страница</string>
+    <string name="cd_reorder">Изменить порядок</string>
+    <string name="cd_swap_pose">Заменить позу</string>
+    <string name="cd_delete_pose">Удалить позу из дня</string>
+</resources>

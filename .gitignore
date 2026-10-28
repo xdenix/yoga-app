@@ -1,0 +1,26 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+build/
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+*.keystore
+*.jks
+keystore.properties
+signing.properties
+/secrets/
+google-services.json
+agconnect-services.json
+
+# CI artifacts
+lint-baseline.xml
+/reports/
+
+# KSP / Hilt generated
+.cxx/

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher foreground — a stylised figure in meditation pose (lotus).
+     Drawn as a simple silhouette so it scales cleanly. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Head -->
+    <path
+        android:fillColor="#FFE0B281"
+        android:pathData="M54,30 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+    <!-- Body (triangle torso) -->
+    <path
+        android:fillColor="#FFE0B281"
+        android:pathData="M54,38 L48,56 L60,56 Z" />
+    <!-- Crossed legs (lotus) -->
+    <path
+        android:fillColor="#FFE0B281"
+        android:pathData="M40,58 C36,62 36,70 44,72 L64,72 C72,70 72,62 68,58 L60,56 L48,56 Z" />
+    <!-- Arms resting on knees -->
+    <path
+        android:fillColor="#FFE0B281"
+        android:pathData="M44,56 L36,68 L40,72 L48,60 Z" />
+    <path
+        android:fillColor="#FFE0B281"
+        android:pathData="M64,56 L72,68 L68,72 L60,60 Z" />
+</vector>

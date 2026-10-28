@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Full backup content — opt-in list.
+  We exclude the DataStore preferences file because it may contain user-specific theme info
+  that we want to persist (so include it) but exclude cache & debug files.
+  allowBackup is set to false in the manifest; this file is provided so that future opt-in
+  can be done with a single toggle.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="yoga_app_settings.preferences_pbk" />
+    <include domain="database" path="yoga-app.db" />
+    <exclude domain="sharedpref" path="device.xml" />
+</full-backup-content>

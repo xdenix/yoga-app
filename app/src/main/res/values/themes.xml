@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Splash screen theme applied to MainActivity so that androidx.core:splashscreen
+      shows a branded icon before Compose content is drawn.
+      Palette: meditative dark indigo + warm gold accent.
+    -->
+    <style name="Theme.YogaApp.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.YogaApp</item>
+    </style>
+
+    <!--
+      Base theme used by the Application and switched to after the splash.
+      Material Light NoActionBar as parent because Compose renders its own MaterialTheme;
+      the actual colours come from Compose (see ui/theme/Color.kt).
+    -->
+    <style name="Theme.YogaApp" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <color name="splash_background">#FF1A1B3A</color>
+</resources>
