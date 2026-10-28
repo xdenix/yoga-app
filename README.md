@@ -2,8 +2,12 @@
 
 Полностью автономное приложение для занятий йогой с 30-дневным планом, таймером на позу, аудио-сопровождением и кастомизацией последовательностей. Built to spec от `ТЗ йога`.
 
+> **Актуальное описание для продолжения разработки:** [`docs/PROJECT.md`](docs/PROJECT.md) и [`AGENTS.md`](AGENTS.md).  
+> Репозиторий: https://github.com/xdenix/yoga-app  
+> Ниже — исходное ТЗ-описание; часть пунктов устарела (фото поз вместо Canvas-only, GitHub-обновления, есть `INTERNET` для updater).
+
 > Kotlin 2.0.21, Compose Material 3, Hilt, Room, DataStore. compileSdk=35, targetSdk=35, minSdk=26.
-> **100% офлайн** — ни одного сетевого вызова в коде приложения.
+> Данные практики — offline-first (Room/DataStore); сеть используется только для проверки GitHub Releases.
 
 ---
 

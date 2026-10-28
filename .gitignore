@@ -25,3 +25,9 @@ lint-baseline.xml
 
 # KSP / Hilt generated
 .cxx/
+
+# Temp melody downloads (not for commit raw)
+tools/melody-dl/
+
+# Session handoffs are optional local artifacts; keep tracked if committed intentionally
+# handoffs/
