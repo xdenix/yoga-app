@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -69,7 +70,7 @@ fun DayScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val scope = remember { kotlinx.coroutines.MainScope() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -221,10 +222,10 @@ private fun PoseCard(
                 contentDescription = stringResource(R.string.cd_reorder),
                 tint = MaterialTheme.colorScheme.outline,
             )
-            Box(modifier = Modifier.size(72.dp).padding(start = 12.dp)) {
+            Box(modifier = Modifier.size(56.dp).padding(start = 12.dp)) {
                 PoseFigure(
                     pose = pose,
-                    size = 72.dp,
+                    size = 56.dp,
                 )
             }
             Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {

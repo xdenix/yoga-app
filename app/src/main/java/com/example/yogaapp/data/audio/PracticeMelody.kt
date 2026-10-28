@@ -1,28 +1,28 @@
 package com.example.yogaapp.data.audio
 
-/**
- * Фоновые мелодии практики. Файлы — короткие зацикленные WAV в assets,
- * написанные для приложения (не сторонние записи).
- */
+// Background practice melodies: five Sufi tracks under assets/melodies (mp3).
+// Source: Freesound CC0 (nesibe 171927, 171928, 172368, 183938, 183939).
 enum class PracticeMelody {
     Off,
-    Morning,
-    Breath,
-    River,
-    Evening,
+    SufiMorning,
+    SufiBreath,
+    SufiRiver,
+    SufiEvening,
+    SufiWhirl,
     ;
 
     val assetName: String?
         get() = when (this) {
             Off -> null
-            Morning -> "melodies/morning.wav"
-            Breath -> "melodies/breath.wav"
-            River -> "melodies/river.wav"
-            Evening -> "melodies/evening.wav"
+            SufiMorning -> "melodies/sufi_morning.mp3"
+            SufiBreath -> "melodies/sufi_breath.mp3"
+            SufiRiver -> "melodies/sufi_river.mp3"
+            SufiEvening -> "melodies/sufi_evening.mp3"
+            SufiWhirl -> "melodies/sufi_whirl.mp3"
         }
 
     companion object {
         fun fromStored(value: String?): PracticeMelody =
-            entries.firstOrNull { it.name == value } ?: Morning
+            entries.firstOrNull { it.name == value } ?: SufiMorning
     }
 }

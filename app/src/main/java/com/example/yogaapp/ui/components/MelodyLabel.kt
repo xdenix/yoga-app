@@ -9,9 +9,10 @@ import com.example.yogaapp.data.audio.PracticeMelody
 fun PracticeMelody.title(): String = stringResource(
     when (this) {
         PracticeMelody.Off -> R.string.melody_off
-        PracticeMelody.Morning -> R.string.melody_morning
-        PracticeMelody.Breath -> R.string.melody_breath
-        PracticeMelody.River -> R.string.melody_river
-        PracticeMelody.Evening -> R.string.melody_evening
+        PracticeMelody.SufiMorning -> R.string.melody_sufi_morning
+        PracticeMelody.SufiBreath -> R.string.melody_sufi_breath
+        PracticeMelody.SufiRiver -> R.string.melody_sufi_river
+        PracticeMelody.SufiEvening -> R.string.melody_sufi_evening
+        PracticeMelody.SufiWhirl -> R.string.melody_sufi_whirl
     },
 )

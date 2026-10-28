@@ -21,8 +21,8 @@ android {
         applicationId = "com.example.yogaapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -114,7 +114,6 @@ android {
         warningsAsErrors = false
         checkReleaseBuilds = true
         disable += setOf("MissingTranslation", "ExtraTranslation")
-        baseline = file("lint-baseline.xml")
     }
 }
 
@@ -147,11 +146,6 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
-
-    // WorkManager
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.work.hilt)
-    ksp(libs.hilt.work.compiler)
 
     // Hilt
     implementation(libs.hilt.android)

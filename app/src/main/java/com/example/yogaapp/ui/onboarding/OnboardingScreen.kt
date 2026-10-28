@@ -122,7 +122,7 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingPage(page: OnboardingPage) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -130,7 +130,7 @@ private fun OnboardingPage(page: OnboardingPage) {
             val samplePose = remember { PoseLibrary.byId("vrksasana")!! }
             PoseFigure(
                 pose = samplePose,
-                size = 160.dp,
+                size = 140.dp,
                 strokeColor = MaterialTheme.colorScheme.primary,
                 fillColor = MaterialTheme.colorScheme.primary,
             )
@@ -139,20 +139,20 @@ private fun OnboardingPage(page: OnboardingPage) {
                 imageVector = page.icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(72.dp),
             )
         }
-        Spacer(Modifier.size(24.dp))
+        Spacer(Modifier.size(20.dp))
         Text(
             text = stringResource(page.titleRes),
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
         )
-        Spacer(Modifier.size(12.dp))
+        Spacer(Modifier.size(8.dp))
         Text(
             text = stringResource(page.bodyRes),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )

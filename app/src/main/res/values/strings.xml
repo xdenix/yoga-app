@@ -131,10 +131,11 @@
     <string name="settings_section_audio">Аудио</string>
     <string name="settings_section_melody">Мелодия для практики</string>
     <string name="melody_off">Без музыки</string>
-    <string name="melody_morning">Утро</string>
-    <string name="melody_breath">Дыхание</string>
-    <string name="melody_river">Река</string>
-    <string name="melody_evening">Вечер</string>
+    <string name="melody_sufi_morning">Суфийское утро</string>
+    <string name="melody_sufi_breath">Суфийское дыхание</string>
+    <string name="melody_sufi_river">Суфийская река</string>
+    <string name="melody_sufi_evening">Суфийский вечер</string>
+    <string name="melody_sufi_whirl">Суфийское кружение</string>
     <string name="session_melody">Мелодия</string>
     <string name="settings_audio_mode_tts">Синтез речи (по умолчанию)</string>
     <string name="settings_audio_mode_mp3">Записанный голос (требует аудио-пак)</string>
@@ -146,6 +147,9 @@
     <string name="settings_section_progress">Прогресс</string>
     <string name="settings_reset_progress">Сбросить прогресс плана</string>
     <string name="settings_reset_progress_warning">Это удалит историю завершённых сессий и вернёт к 1-му дню.</string>
+    <string name="settings_section_updates">Обновления</string>
+    <string name="settings_check_update">Проверить обновления</string>
+    <string name="settings_check_update_in_progress">Проверка…</string>
     <string name="settings_section_about">О приложении</string>
     <string name="settings_version">Версия</string>
 
@@ -153,6 +157,9 @@
     <string name="update_available_title">Доступно обновление</string>
     <string name="update_available_body">Найдена версия %1$s. Скачать и установить?</string>
     <string name="update_install">Установить</string>
+    <string name="update_no_update">У вас установлена последняя версия</string>
+    <string name="update_found">Доступна версия %1$s. Откройте диалог установки.</string>
+    <string name="update_error">Не удалось проверить обновления. Попробуйте позже.</string>
 
     <!-- Content descriptions -->
     <string name="cd_loading">Загрузка</string>

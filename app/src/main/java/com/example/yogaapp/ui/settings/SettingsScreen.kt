@@ -1,16 +1,21 @@
 package com.example.yogaapp.ui.settings
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,7 +33,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,12 +49,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.yogaapp.BuildConfig
 import com.example.yogaapp.R
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.ThemeMode
 import com.example.yogaapp.domain.model.YogaRules
 import com.example.yogaapp.ui.components.title
+import com.example.yogaapp.update.CheckResult
+import com.example.yogaapp.update.GithubAppUpdater
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +69,7 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val scope = remember { kotlinx.coroutines.MainScope() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -143,10 +154,75 @@ fun SettingsScreen(
                 Text(stringResource(R.string.settings_reset_progress))
             }
             HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_updates))
+            UpdateRow(snackbarHostState = snackbarHostState)
+            HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_about))
-            AboutItem(label = stringResource(R.string.settings_version), value = "1.0.0")
+            AboutItem(
+                label = stringResource(R.string.settings_version),
+                value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            )
         }
     }
+}
+
+@Composable
+private fun UpdateRow(snackbarHostState: SnackbarHostState) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = stringResource(R.string.settings_check_update),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f).padding(end = 16.dp),
+            )
+            if (checking) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
+        OutlinedButton(
+            onClick = {
+                if (checking) return@OutlinedButton
+                val activity = context.findActivity() ?: return@OutlinedButton
+                checking = true
+                scope.launch {
+                    val result = GithubAppUpdater(activity).checkExplicit()
+                    checking = false
+                    val msg = when (result) {
+                        CheckResult.NoUpdate -> context.getString(R.string.update_no_update)
+                        is CheckResult.Available -> context.getString(R.string.update_found, result.label)
+                        CheckResult.Error -> context.getString(R.string.update_error)
+                        CheckResult.Busy -> context.getString(R.string.settings_check_update_in_progress)
+                    }
+                    snackbarHostState.showSnackbar(msg)
+                }
+            },
+            enabled = !checking,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        ) {
+            Text(stringResource(R.string.settings_check_update))
+        }
+    }
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx: Context = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }
 
 @Composable

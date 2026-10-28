@@ -126,12 +126,18 @@
     <string name="settings_section_progress">Progress</string>
     <string name="settings_reset_progress">Reset plan progress</string>
     <string name="settings_reset_progress_warning">This will delete completed-session history and reset to day 1.</string>
+    <string name="settings_section_updates">Updates</string>
+    <string name="settings_check_update">Check for updates</string>
+    <string name="settings_check_update_in_progress">Checking…</string>
     <string name="settings_section_about">About</string>
     <string name="settings_version">Version</string>
 
     <string name="update_available_title">Update available</string>
     <string name="update_available_body">Version %1$s is ready. Download and install?</string>
     <string name="update_install">Install</string>
+    <string name="update_no_update">You have the latest version</string>
+    <string name="update_found">Version %1$s is available. Open the install dialog.</string>
+    <string name="update_error">Could not check for updates. Try again later.</string>
 
     <string name="cd_loading">Loading</string>
     <string name="cd_back">Back</string>

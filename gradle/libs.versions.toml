@@ -14,11 +14,9 @@ activityCompose = "1.9.3"
 navigationCompose = "2.8.4"
 datastore = "1.1.1"
 room = "2.6.1"
-workManager = "2.10.0"
 # DI
 hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
-hiltWork = "1.2.0"
 
 # Serialization / Network (declared but unused — swap FakeRepository in one place)
 kotlinxSerialization = "1.7.3"
@@ -85,14 +83,9 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
-# WorkManager
-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
-work-hilt = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
-
 # Hilt
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
-hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 
 # Serialization / Network
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

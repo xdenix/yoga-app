@@ -127,25 +127,43 @@ private fun RunningContent(
         state.elapsedSec.toFloat() / state.totalSec.toFloat()
     } else 0f
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
             text = stringResource(R.string.session_pose_n_of_m, state.currentIndex + 1, state.total),
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (current != null) {
-            PoseFigure(pose = current.pose, size = 48.dp)
+            PoseFigure(pose = current.pose, size = 140.dp)
+            Text(
+                text = current.pose.ruName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = current.pose.sanskritName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = current.pose.ruDescription,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
             Text(
                 text = stringResource(R.string.session_melody),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 PracticeMelody.entries.forEach { item ->
                     FilterChip(
@@ -155,27 +173,10 @@ private fun RunningContent(
                     )
                 }
             }
-            Text(
-                text = current.pose.ruName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = current.pose.sanskritName,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                Text(
-                    text = current.pose.ruDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
         }
         Text(
             text = stringResource(R.string.session_remaining, state.remainingSec),
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Light,
             color = MaterialTheme.colorScheme.primary,
         )

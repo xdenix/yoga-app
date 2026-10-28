@@ -102,7 +102,7 @@ data class SettingsUiState(
     val audioMode: AudioMode = AudioMode.Tts,
     val globalDurationSec: Int = 30,
     val hasAudioPack: Boolean = false,
-    val melody: PracticeMelody = PracticeMelody.Morning,
+    val melody: PracticeMelody = PracticeMelody.SufiMorning,
 )
 
 sealed interface SettingsEffect {

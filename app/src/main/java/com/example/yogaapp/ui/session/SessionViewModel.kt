@@ -46,12 +46,12 @@ class SessionViewModel @Inject constructor(
     private val _effects = Channel<SessionEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    private val _melody = MutableStateFlow(PracticeMelody.Morning)
+    private val _melody = MutableStateFlow(PracticeMelody.SufiMorning)
     val melody: StateFlow<PracticeMelody> = _melody.asStateFlow()
 
     private var sessionActive = false
     private var userPaused = false
-    private var currentMelody = PracticeMelody.Morning
+    private var currentMelody = PracticeMelody.SufiMorning
 
     init {
         viewModelScope.launch {

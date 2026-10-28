@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,15 +42,17 @@ import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.delay
 
-private val SplashInk = Color(0xFF1A1B3A)
-private val PetalPink = Color(0xFFF0C2D0)
-private val PetalRose = Color(0xFFE7A3BA)
-private val PetalGold = Color(0xFFF0D08A)
-private val PetalCream = Color(0xFFFFF6DE)
-private val GlowGold = Color(0x66D4AF37)
+private val SplashInk = Color(0xFF1B1612)
+private val PetalPink = Color(0xFFE8D8D0)
+private val PetalRose = Color(0xFFEDDDD0)
+private val PetalGold = Color(0xFFD4C4B5)
+private val PetalCream = Color(0xFFF9F7EE)
+private val GlowGold = Color(0x665B9090)
+
+private val HandwrittenFont = FontFamily(Font(R.font.caveat_regular))
 
 /**
- * Заставка: лотос раскрывается из центра, затем проявляется подпись.
+ * Заставка: лотос раскрывается из центра, затем проявляется подпись рукописным шрифтом.
  */
 @Composable
 fun SplashScreen(
@@ -84,17 +88,21 @@ fun SplashScreen(
             LotusMark(
                 bloom = bloom.value,
                 breath = breath,
-                modifier = Modifier.size(240.dp),
+                modifier = Modifier.size(260.dp),
             )
             Text(
                 text = stringResource(R.string.splash_brand),
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 1.4.sp,
+                fontFamily = HandwrittenFont,
+                fontWeight = FontWeight.Normal,
+                fontSize = 28.sp,
+                letterSpacing = 0.5.sp,
                 color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                softWrap = false,
                 modifier = Modifier.graphicsLayer {
                     alpha = titleAlpha
-                    translationY = (1f - titleAlpha) * 28f
+                    translationY = (1f - titleAlpha) * 20f
                 },
             )
         }
