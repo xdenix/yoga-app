@@ -137,7 +137,7 @@ private fun RunningContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (current != null) {
-            PoseFigure(pose = current.pose, size = 240.dp)
+            PoseFigure(pose = current.pose, size = 48.dp)
             Text(
                 text = stringResource(R.string.session_melody),
                 style = MaterialTheme.typography.labelLarge,
