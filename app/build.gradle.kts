@@ -21,11 +21,14 @@ android {
         applicationId = "com.example.yogaapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        buildConfigField("String", "GITHUB_OWNER", "\"xdenix\"")
+        buildConfigField("String", "GITHUB_REPO", "\"yoga-app\"")
 
         // Smoke-test custom runner is provided by Hilt; keep default for instrumented tests below.
     }
@@ -172,9 +175,6 @@ dependencies {
 
     // Logging
     implementation(libs.timber)
-
-    // Google Play in-app updates. No-op when the app was not installed from Play.
-    implementation(libs.play.app.update)
 
     // Tests
     testImplementation(libs.junit5.jupiter.api)

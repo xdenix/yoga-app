@@ -149,6 +149,11 @@
     <string name="settings_section_about">О приложении</string>
     <string name="settings_version">Версия</string>
 
+    <!-- GitHub updates -->
+    <string name="update_available_title">Доступно обновление</string>
+    <string name="update_available_body">Найдена версия %1$s. Скачать и установить?</string>
+    <string name="update_install">Установить</string>
+
     <!-- Content descriptions -->
     <string name="cd_loading">Загрузка</string>
     <string name="cd_back">Назад</string>

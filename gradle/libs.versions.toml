@@ -35,9 +35,6 @@ coroutines = "1.9.0"
 # Logging
 timber = "5.0.1"
 
-# Google Play in-app updates
-playAppUpdate = "2.1.0"
-
 # Security
 androidxSecurity = "1.1.0-alpha06"
 
@@ -114,9 +111,6 @@ coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutin
 
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
-
-# Google Play in-app updates
-play-app-update = { group = "com.google.android.play", name = "app-update", version.ref = "playAppUpdate" }
 
 # Security (declared for future auth swap; not used while auth=none)
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidxSecurity" }
