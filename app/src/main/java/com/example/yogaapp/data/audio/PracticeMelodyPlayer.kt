@@ -3,12 +3,13 @@ package com.example.yogaapp.data.audio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Зацикленное тихое воспроизведение выбранной мелодии из assets.
+ * Зацикленное тихое воспроизведение мелодии из assets или пользовательского URI.
  * Голос позы идёт отдельным плеером и эту дорожку не глушит.
  */
 @Singleton
@@ -16,24 +17,31 @@ class PracticeMelodyPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private var player: MediaPlayer? = null
-    private var current: PracticeMelody = PracticeMelody.Off
+    private var currentKey: String? = null
 
-    fun play(melody: PracticeMelody) {
-        val asset = melody.assetName
-        if (asset == null) {
+    fun play(melody: PracticeMelody, customUri: Uri? = null) {
+        if (!melody.playsInApp) {
             stop()
             return
         }
-        if (current == melody && player != null) {
+        val key = when (melody) {
+            PracticeMelody.BuiltIn -> "asset:${melody.assetName}"
+            PracticeMelody.FromFile -> customUri?.toString()?.let { "uri:$it" }
+            else -> null
+        }
+        if (key == null) {
+            stop()
+            return
+        }
+        if (currentKey == key && player != null) {
             if (player?.isPlaying != true) {
                 runCatching { player?.start() }
             }
             return
         }
         releasePlayer()
-        current = melody
+        currentKey = key
         runCatching {
-            val afd = context.assets.openFd(asset)
             val created = MediaPlayer()
             created.setAudioAttributes(
                 AudioAttributes.Builder()
@@ -41,8 +49,18 @@ class PracticeMelodyPlayer @Inject constructor(
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build(),
             )
-            created.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            afd.close()
+            when (melody) {
+                PracticeMelody.BuiltIn -> {
+                    val asset = melody.assetName ?: error("missing asset")
+                    val afd = context.assets.openFd(asset)
+                    created.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+                }
+                PracticeMelody.FromFile -> {
+                    created.setDataSource(context, customUri!!)
+                }
+                else -> error("unsupported")
+            }
             created.isLooping = true
             created.setVolume(VOLUME, VOLUME)
             created.prepare()
@@ -50,7 +68,7 @@ class PracticeMelodyPlayer @Inject constructor(
             player = created
         }.onFailure {
             releasePlayer()
-            current = PracticeMelody.Off
+            currentKey = null
         }
     }
 
@@ -60,7 +78,7 @@ class PracticeMelodyPlayer @Inject constructor(
 
     fun stop() {
         releasePlayer()
-        current = PracticeMelody.Off
+        currentKey = null
     }
 
     private fun releasePlayer() {

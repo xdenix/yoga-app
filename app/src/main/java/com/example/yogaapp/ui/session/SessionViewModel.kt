@@ -3,6 +3,7 @@ package com.example.yogaapp.ui.session
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
 import com.example.yogaapp.data.audio.PoseAudioPlayer
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.audio.PracticeMelodyPlayer
@@ -22,6 +23,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -47,24 +49,38 @@ class SessionViewModel @Inject constructor(
     private val _effects = Channel<SessionEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    private val _melody = MutableStateFlow(PracticeMelody.SufiMorning)
+    private val _melody = MutableStateFlow(PracticeMelody.BuiltIn)
     val melody: StateFlow<PracticeMelody> = _melody.asStateFlow()
 
     private var sessionActive = false
     private var userPaused = false
-    private var currentMelody = PracticeMelody.SufiMorning
+    private var currentMelody = PracticeMelody.BuiltIn
+    private var customMusicUri: Uri? = null
 
     init {
         viewModelScope.launch {
-            settingsDataStore.practiceMelody.collect { selected ->
-                currentMelody = selected
-                _melody.value = selected
-                if (sessionActive && !userPaused && _uiState.value !is SessionUiState.Finished) {
-                    melodyPlayer.play(selected)
+            combine(
+                settingsDataStore.practiceMelody,
+                settingsDataStore.customMusicUri,
+            ) { selected, uri -> selected to uri }
+                .collect { (selected, uri) ->
+                    currentMelody = selected
+                    customMusicUri = uri?.let(Uri::parse)
+                    _melody.value = selected
+                    if (sessionActive && !userPaused && _uiState.value !is SessionUiState.Finished) {
+                        syncMelodyPlayback(selected)
+                    }
                 }
-            }
         }
         loadSession()
+    }
+
+    private fun syncMelodyPlayback(melody: PracticeMelody) {
+        if (melody.playsInApp) {
+            melodyPlayer.play(melody, customMusicUri)
+        } else {
+            melodyPlayer.stop()
+        }
     }
 
     private fun loadSession() {
@@ -97,7 +113,7 @@ class SessionViewModel @Inject constructor(
             val first = resolvedPoses.first()
             audioPlayer.playDescription(poseForSpeech(first.first, first.second.side))
             sessionActive = true
-            if (!userPaused) melodyPlayer.play(currentMelody)
+            if (!userPaused) syncMelodyPlayback(currentMelody)
         }
     }
 
@@ -160,7 +176,7 @@ class SessionViewModel @Inject constructor(
             SessionEvent.Resume -> {
                 userPaused = false
                 timer.resume()
-                melodyPlayer.play(currentMelody)
+                syncMelodyPlayback(currentMelody)
             }
             SessionEvent.Skip -> timer.skip()
             SessionEvent.Previous -> timer.previous()
@@ -183,7 +199,14 @@ class SessionViewModel @Inject constructor(
     }
 
     fun setMelody(melody: PracticeMelody) {
-        viewModelScope.launch { settingsDataStore.setPracticeMelody(melody) }
+        viewModelScope.launch {
+            settingsDataStore.setPracticeMelody(melody)
+            when (melody) {
+                PracticeMelody.YandexMusic -> _effects.send(SessionEffect.OpenYandexMusic)
+                PracticeMelody.External -> _effects.send(SessionEffect.OpenSystemMusic)
+                else -> Unit
+            }
+        }
     }
 
     override fun onCleared() {
@@ -234,5 +257,7 @@ sealed interface SessionEvent {
 sealed interface SessionEffect {
     data object Completed : SessionEffect
     data object Close : SessionEffect
+    data object OpenYandexMusic : SessionEffect
+    data object OpenSystemMusic : SessionEffect
     data class Error(val messageRes: Int) : SessionEffect
 }

@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.yogaapp.R
+import com.example.yogaapp.data.audio.ExternalMusicLauncher
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.domain.model.PoseSide
 import com.example.yogaapp.ui.components.LoadingState
@@ -70,9 +71,10 @@ fun SessionPlayerScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 SessionEffect.Completed, SessionEffect.Close -> onFinish()
+                SessionEffect.OpenYandexMusic -> ExternalMusicLauncher.openYandexMusic(context)
+                SessionEffect.OpenSystemMusic -> ExternalMusicLauncher.openSystemMusicPicker(context)
                 is SessionEffect.Error -> {
                     scope.launch {
-                        // Simple inline toast-like effect
                         android.widget.Toast.makeText(context, effect.messageRes, android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }

@@ -3,6 +3,9 @@ package com.example.yogaapp.ui.settings
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -51,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.yogaapp.BuildConfig
 import com.example.yogaapp.R
+import com.example.yogaapp.data.audio.ExternalMusicLauncher
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.ThemeMode
@@ -70,14 +74,31 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val pickMusic = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            viewModel.setCustomMusicUri(uri.toString())
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
-            val res = when (effect) {
-                is SettingsEffect.Snackbar -> effect.messageRes
-                is SettingsEffect.Error -> effect.messageRes
+            when (effect) {
+                is SettingsEffect.Snackbar ->
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(effect.messageRes)) }
+                is SettingsEffect.Error ->
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(effect.messageRes)) }
+                SettingsEffect.PickMusicFile -> pickMusic.launch(arrayOf("audio/*"))
+                SettingsEffect.OpenYandexMusic -> ExternalMusicLauncher.openYandexMusic(context)
+                SettingsEffect.OpenSystemMusic -> ExternalMusicLauncher.openSystemMusicPicker(context)
             }
-            scope.launch { snackbarHostState.showSnackbar(context.getString(res)) }
         }
     }
 
@@ -134,6 +155,26 @@ fun SettingsScreen(
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_melody))
             MelodyRow(current = state.melody, onSelect = viewModel::setMelody)
+            OutlinedButton(
+                onClick = { pickMusic.launch(arrayOf("audio/*")) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.settings_pick_music_file))
+            }
+            if (!state.customMusicUri.isNullOrBlank()) {
+                Text(
+                    text = stringResource(R.string.settings_custom_music_selected),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
+            Text(
+                text = stringResource(R.string.settings_melody_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_session))
             Text(
@@ -320,6 +361,7 @@ private fun MelodyRow(current: PracticeMelody, onSelect: (PracticeMelody) -> Uni
 @Composable
 private fun AudioModeRow(current: AudioMode, onSelect: (AudioMode) -> Unit) {
     val options = listOf(
+        AudioMode.Off to R.string.settings_audio_mode_off,
         AudioMode.Tts to R.string.settings_audio_mode_tts,
         AudioMode.Mp3Pack to R.string.settings_audio_mode_mp3,
     )

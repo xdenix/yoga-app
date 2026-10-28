@@ -54,6 +54,7 @@ class TtsPoseAudioPlayer @Inject constructor(
 
     override suspend fun playDescription(pose: YogaPose) {
         val mode = settingsDataStore.audioMode.first()
+        if (mode == AudioMode.Off) return
         if (mode == AudioMode.Mp3Pack && mp3Pack.hasPose(pose.id)) {
             mp3Pack.playDescription(pose)
             return

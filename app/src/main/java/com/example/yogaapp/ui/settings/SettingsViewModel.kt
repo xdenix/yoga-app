@@ -54,7 +54,8 @@ class SettingsViewModel @Inject constructor(
         },
         settingsDataStore.posesPerDay,
         settingsDataStore.pauseBetweenSec,
-    ) { core, posesPerDay, pauseBetween ->
+        settingsDataStore.customMusicUri,
+    ) { core, posesPerDay, pauseBetween, customUri ->
         SettingsUiState(
             themeMode = core.themeMode,
             dynamicColor = core.dynamicColor,
@@ -64,6 +65,7 @@ class SettingsViewModel @Inject constructor(
             pauseBetweenSec = pauseBetween,
             hasAudioPack = audioPlayer.hasAudioPack,
             melody = core.melody,
+            customMusicUri = customUri,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -104,7 +106,28 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setMelody(melody: PracticeMelody) {
-        viewModelScope.launch { settingsDataStore.setPracticeMelody(melody) }
+        viewModelScope.launch {
+            settingsDataStore.setPracticeMelody(melody)
+            when (melody) {
+                PracticeMelody.YandexMusic -> _effects.send(SettingsEffect.OpenYandexMusic)
+                PracticeMelody.External -> _effects.send(SettingsEffect.OpenSystemMusic)
+                PracticeMelody.FromFile -> {
+                    if (settingsDataStore.customMusicUri.first().isNullOrBlank()) {
+                        _effects.send(SettingsEffect.PickMusicFile)
+                    }
+                }
+                else -> Unit
+            }
+        }
+    }
+
+    fun setCustomMusicUri(uri: String?) {
+        viewModelScope.launch {
+            settingsDataStore.setCustomMusicUri(uri)
+            if (!uri.isNullOrBlank()) {
+                settingsDataStore.setPracticeMelody(PracticeMelody.FromFile)
+            }
+        }
     }
 
     fun resetProgress() {
@@ -137,10 +160,14 @@ data class SettingsUiState(
     val posesPerDay: Int = YogaRules.DEFAULT_POSES_PER_DAY,
     val pauseBetweenSec: Int = YogaRules.DEFAULT_PAUSE_BETWEEN_SEC,
     val hasAudioPack: Boolean = false,
-    val melody: PracticeMelody = PracticeMelody.SufiMorning,
+    val melody: PracticeMelody = PracticeMelody.BuiltIn,
+    val customMusicUri: String? = null,
 )
 
 sealed interface SettingsEffect {
     data class Snackbar(val messageRes: Int) : SettingsEffect
     data class Error(val messageRes: Int) : SettingsEffect
+    data object PickMusicFile : SettingsEffect
+    data object OpenYandexMusic : SettingsEffect
+    data object OpenSystemMusic : SettingsEffect
 }

@@ -1,28 +1,42 @@
 package com.example.yogaapp.data.audio
 
-// Background practice melodies: five Sufi tracks under assets/melodies (mp3).
-// Source: Freesound CC0 (nesibe 171927, 171928, 172368, 183938, 183939).
+/**
+ * Источник фоновой музыки для практики.
+ *
+ * [BuiltIn] — обрезанный суфийский трек в `assets/melodies/sufi_dervish.mp3`.
+ * [FromFile] — файл, выбранный пользователем (URI в DataStore).
+ * [YandexMusic] / [External] — музыка извне: приложение не играет свой трек.
+ */
 enum class PracticeMelody {
     Off,
-    SufiMorning,
-    SufiBreath,
-    SufiRiver,
-    SufiEvening,
-    SufiWhirl,
+    BuiltIn,
+    FromFile,
+    YandexMusic,
+    External,
     ;
+
+    val playsInApp: Boolean
+        get() = this == BuiltIn || this == FromFile
 
     val assetName: String?
         get() = when (this) {
-            Off -> null
-            SufiMorning -> "melodies/sufi_morning.mp3"
-            SufiBreath -> "melodies/sufi_breath.mp3"
-            SufiRiver -> "melodies/sufi_river.mp3"
-            SufiEvening -> "melodies/sufi_evening.mp3"
-            SufiWhirl -> "melodies/sufi_whirl.mp3"
+            BuiltIn -> "melodies/sufi_dervish.mp3"
+            else -> null
         }
 
     companion object {
-        fun fromStored(value: String?): PracticeMelody =
-            entries.firstOrNull { it.name == value } ?: SufiMorning
+        private val LEGACY_BUILTIN = setOf(
+            "SufiMorning",
+            "SufiBreath",
+            "SufiRiver",
+            "SufiEvening",
+            "SufiWhirl",
+            "BuiltIn",
+        )
+
+        fun fromStored(value: String?): PracticeMelody = when {
+            value == null || value in LEGACY_BUILTIN -> BuiltIn
+            else -> entries.firstOrNull { it.name == value } ?: BuiltIn
+        }
     }
 }

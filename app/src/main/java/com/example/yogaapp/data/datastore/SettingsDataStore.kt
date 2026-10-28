@@ -25,7 +25,8 @@ import javax.inject.Singleton
  *  - dynamicColor: Material You colours on Android 12+ (default: false — we want our custom palette)
  *  - onboardingShown: flag set after the user picks a level on first launch
  *  - chosenLevel: Beginner / Intermediate / Advanced (drives program generation)
- *  - audioMode: TTS or MP3_PACK (default: TTS)
+ *  - audioMode: Off / TTS / MP3_PACK (default: TTS)
+ *  - customMusicUri: content:// URI for [PracticeMelody.FromFile]
  *  - globalDurationSec: default duration applied to all poses when not overridden (default: 30)
  *  - posesPerDay: how many random poses each program day gets (default: 10)
  *  - pauseBetweenSec: rest seconds between poses in a session (default: 10)
@@ -60,6 +61,7 @@ class SettingsDataStore @Inject constructor(
 
     val audioMode: Flow<AudioMode> = store.data.map { p ->
         when (p[KEY_AUDIO_MODE]) {
+            AudioMode.Off.name -> AudioMode.Off
             AudioMode.Mp3Pack.name -> AudioMode.Mp3Pack
             else -> AudioMode.Tts
         }
@@ -83,6 +85,10 @@ class SettingsDataStore @Inject constructor(
 
     val practiceMelody: Flow<PracticeMelody> = store.data.map { p ->
         PracticeMelody.fromStored(p[KEY_MELODY])
+    }
+
+    val customMusicUri: Flow<String?> = store.data.map { p ->
+        p[KEY_CUSTOM_MUSIC_URI]?.takeIf { it.isNotBlank() }
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {
@@ -132,6 +138,13 @@ class SettingsDataStore @Inject constructor(
         store.edit { it[KEY_MELODY] = melody.name }
     }
 
+    suspend fun setCustomMusicUri(uri: String?) {
+        store.edit {
+            if (uri.isNullOrBlank()) it.remove(KEY_CUSTOM_MUSIC_URI)
+            else it[KEY_CUSTOM_MUSIC_URI] = uri
+        }
+    }
+
     companion object {
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
@@ -143,6 +156,7 @@ class SettingsDataStore @Inject constructor(
         private val KEY_PAUSE_BETWEEN = intPreferencesKey("pause_between_sec")
         private val KEY_AUDIO_PACK_ENABLED = booleanPreferencesKey("audio_pack_enabled")
         private val KEY_MELODY = stringPreferencesKey("practice_melody")
+        private val KEY_CUSTOM_MUSIC_URI = stringPreferencesKey("custom_music_uri")
 
         const val DEFAULT_GLOBAL_DURATION = 30
         const val MIN_DURATION = 10
@@ -150,4 +164,4 @@ class SettingsDataStore @Inject constructor(
     }
 }
 
-enum class AudioMode { Tts, Mp3Pack }
+enum class AudioMode { Off, Tts, Mp3Pack }

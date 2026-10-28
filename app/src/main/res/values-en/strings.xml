@@ -121,6 +121,17 @@
     <string name="settings_dynamic_color_title">Dynamic colors</string>
     <string name="settings_dynamic_color_subtitle">Match palette to wallpaper (Android 12+)</string>
     <string name="settings_section_audio">Audio</string>
+    <string name="settings_section_melody">Practice music</string>
+    <string name="melody_off">No music</string>
+    <string name="melody_builtin_dervish">Built-in (Sufi ceremony)</string>
+    <string name="melody_from_file">File from folder</string>
+    <string name="melody_yandex">Yandex Music</string>
+    <string name="melody_external">Other music app</string>
+    <string name="settings_pick_music_file">Pick MP3 from folder…</string>
+    <string name="settings_custom_music_selected">Custom file selected</string>
+    <string name="settings_melody_hint">Yandex Music and “other app” open an external player; YogaApp does not play its own track.</string>
+    <string name="session_melody">Music</string>
+    <string name="settings_audio_mode_off">Voice off</string>
     <string name="settings_audio_mode_tts">Text-to-speech (default)</string>
     <string name="settings_audio_mode_mp3">Recorded voice (requires audio pack)</string>
     <string name="settings_audio_pack_status_installed">Audio pack installed</string>
