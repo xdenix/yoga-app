@@ -280,11 +280,23 @@ private fun UpdateRow(snackbarHostState: SnackbarHostState) {
         OutlinedButton(
             onClick = {
                 if (checking) return@OutlinedButton
-                val activity = context.findActivity() ?: return@OutlinedButton
+                val activity = context.findActivity()
+                if (activity == null) {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.update_no_activity))
+                    }
+                    return@OutlinedButton
+                }
+                // Prefer the host Activity instance so pending-install survives unknown-sources.
+                val updater = (activity as? com.example.yogaapp.MainActivity)?.githubUpdaterForSettings()
+                    ?: GithubAppUpdater(activity)
                 checking = true
                 scope.launch {
-                    val result = GithubAppUpdater(activity).checkExplicit()
-                    checking = false
+                    val result = try {
+                        updater.checkExplicit()
+                    } finally {
+                        checking = false
+                    }
                     val msg = when (result) {
                         CheckResult.NoUpdate -> context.getString(R.string.update_no_update)
                         is CheckResult.Available -> context.getString(R.string.update_found, result.label)

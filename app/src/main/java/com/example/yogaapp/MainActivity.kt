@@ -30,6 +30,9 @@ class MainActivity : ComponentActivity() {
 
     private val githubUpdater by lazy { GithubAppUpdater(this) }
 
+    /** Shared with Settings so pending APK install survives unknown-sources round-trip. */
+    fun githubUpdaterForSettings(): GithubAppUpdater = githubUpdater
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -55,6 +58,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Continue APK install after user grants «Install unknown apps».
+        githubUpdater.onHostResumed()
         lifecycleScope.launch {
             githubUpdater.check()
         }

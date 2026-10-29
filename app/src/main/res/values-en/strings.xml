@@ -170,7 +170,10 @@
     <string name="update_install">Install</string>
     <string name="update_no_update">You have the latest version</string>
     <string name="update_found">Version %1$s is available. Open the install dialog.</string>
-    <string name="update_error">Could not check for updates. Try again later.</string>
+    <string name="update_error">Could not check or download the update. You can open the download in a browser.</string>
+    <string name="update_open_browser">Download in browser</string>
+    <string name="update_download_failed_body">Version %1$s was found, but the APK download failed. Open the download page in a browser?</string>
+    <string name="update_no_activity">Could not start the update check. Restart the app.</string>
 
     <string name="cd_loading">Loading</string>
     <string name="cd_back">Back</string>

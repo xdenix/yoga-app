@@ -184,7 +184,10 @@
     <string name="update_install">Установить</string>
     <string name="update_no_update">У вас установлена последняя версия</string>
     <string name="update_found">Доступна версия %1$s. Откройте диалог установки.</string>
-    <string name="update_error">Не удалось проверить обновления. Попробуйте позже.</string>
+    <string name="update_error">Не удалось проверить или скачать обновление. Можно открыть загрузку в браузере.</string>
+    <string name="update_open_browser">Скачать в браузере</string>
+    <string name="update_download_failed_body">Версия %1$s найдена, но скачать APK не удалось. Открыть страницу загрузки в браузере?</string>
+    <string name="update_no_activity">Не удалось открыть проверку обновлений. Перезапустите приложение.</string>
 
     <!-- Content descriptions -->
     <string name="cd_loading">Загрузка</string>
