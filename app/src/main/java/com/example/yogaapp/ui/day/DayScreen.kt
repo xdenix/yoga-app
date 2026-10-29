@@ -102,9 +102,19 @@ fun DayScreen(
                     }
                 },
                 actions = {
-                    val cd = stringResource(R.string.day_skip)
-                    IconButton(onClick = { viewModel.onEvent(DayEvent.SkipDay) }, modifier = Modifier.semantics { contentDescription = cd }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = null)
+                    val showSkip = when (val s = state) {
+                        is DayUiState.Content ->
+                            com.example.yogaapp.domain.model.WorkoutBlocks.byId(s.day.id) == null
+                        else -> false
+                    }
+                    if (showSkip) {
+                        val cd = stringResource(R.string.day_skip)
+                        IconButton(
+                            onClick = { viewModel.onEvent(DayEvent.SkipDay) },
+                            modifier = Modifier.semantics { contentDescription = cd },
+                        ) {
+                            Icon(Icons.Outlined.Delete, contentDescription = null)
+                        }
                     }
                 },
             )

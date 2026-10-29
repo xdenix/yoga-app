@@ -88,6 +88,20 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsDataStore.setAudioMode(mode) }
     }
 
+    /** Toggles pose narration independently from background music. */
+    fun setVoiceEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            if (enabled) {
+                val current = settingsDataStore.audioMode.first()
+                if (current == AudioMode.Off) {
+                    settingsDataStore.setAudioMode(AudioMode.Tts)
+                }
+            } else {
+                settingsDataStore.setAudioMode(AudioMode.Off)
+            }
+        }
+    }
+
     fun setGlobalDuration(sec: Int) {
         viewModelScope.launch { settingsDataStore.setGlobalDuration(sec) }
     }

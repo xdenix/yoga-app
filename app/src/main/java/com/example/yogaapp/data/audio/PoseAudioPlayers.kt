@@ -1,7 +1,9 @@
 package com.example.yogaapp.data.audio
 
 import android.content.Context
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.Voice
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.SettingsDataStore
 import com.example.yogaapp.domain.model.YogaPose
@@ -9,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.io.File
 import java.util.Locale
 import java.util.UUID
@@ -18,15 +21,8 @@ import javax.inject.Singleton
 /**
  * Default implementation of [PoseAudioPlayer] that uses the Android [TextToSpeech] engine.
  *
- * Lifecycle: the TTS engine is initialised lazily on first [playDescription] call and held
- * for the lifetime of the singleton. [release] shuts it down cleanly when the app terminates.
- *
- * Locale selection: prefers Russian for ru content, English for en content. Falls back to the
- * device's default if neither is available.
- *
- * Audio pack: if [SettingsDataStore.audioMode] is [AudioMode.Mp3Pack] AND the asset file
- * `audio-pack/<poseId>.mp3` exists, playback is delegated to [Mp3PackPoseAudioPlayer];
- * otherwise TTS is used as fallback.
+ * Picks the highest-quality Russian voice available (prefers neural / high-quality names)
+ * and speaks slightly slower for a calmer, more natural delivery.
  */
 @Singleton
 class TtsPoseAudioPlayer @Inject constructor(
@@ -42,12 +38,10 @@ class TtsPoseAudioPlayer @Inject constructor(
     private var isReady = false
 
     init {
-        // Pre-initialise TTS on the singleton constructor so the first play call is fast.
-        // The init callback flips [isReady] once the engine reports SUCCESS.
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
+                configureHumanVoice()
                 isReady = true
-                tts?.language = Locale("ru")
             }
         }
     }
@@ -59,20 +53,21 @@ class TtsPoseAudioPlayer @Inject constructor(
             mp3Pack.playDescription(pose)
             return
         }
-        // TTS path — read Russian description aloud.
         withContext(Dispatchers.Main) {
+            val engine = tts ?: return@withContext
             if (!isReady) {
-                tts?.language = Locale("ru")
+                configureHumanVoice()
                 isReady = true
             }
             val text = "${pose.ruName}. ${pose.ruDescription}"
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UUID.randomUUID().toString())
+            val params = Bundle().apply {
+                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+            }
+            engine.speak(text, TextToSpeech.QUEUE_FLUSH, params, UUID.randomUUID().toString())
         }
     }
 
     override suspend fun playGong() {
-        // The gong is a chime — played via MediaPlayer on the optional audio pack's gong.mp3.
-        // If the pack is absent, we silently no-op (TTS can't produce a chime).
         mp3Pack.playGong()
     }
 
@@ -88,20 +83,50 @@ class TtsPoseAudioPlayer @Inject constructor(
         isReady = false
         mp3Pack.release()
     }
+
+    private fun configureHumanVoice() {
+        val engine = tts ?: return
+        val ru = Locale.forLanguageTag("ru-RU")
+        engine.language = ru
+        // Slightly slower + neutral pitch reads as calmer / more human for instructions.
+        engine.setSpeechRate(0.88f)
+        engine.setPitch(0.97f)
+
+        val voices = runCatching { engine.voices }.getOrNull().orEmpty()
+        val best = pickBestRussianVoice(voices)
+        if (best != null) {
+            runCatching { engine.voice = best }
+                .onSuccess { Timber.d("TTS voice: ${best.name} quality=${best.quality}") }
+                .onFailure { Timber.w(it, "Failed to set TTS voice ${best.name}") }
+        }
+    }
+
+    private fun pickBestRussianVoice(voices: Set<Voice>): Voice? {
+        val russian = voices.filter { it.locale.language.equals("ru", ignoreCase = true) }
+        if (russian.isEmpty()) return null
+
+        fun score(v: Voice): Int {
+            var s = v.quality * 10
+            val name = v.name.lowercase()
+            if (listOf("neural", "natural", "wavenet", "studio", "premium", "enhanced", "hd")
+                    .any { it in name }
+            ) {
+                s += 50
+            }
+            if (v.isNetworkConnectionRequired) s += 15 // often higher quality on-device fallbacks exist too
+            if (v.latency == Voice.LATENCY_VERY_LOW || v.latency == Voice.LATENCY_LOW) s += 5
+            // Prefer female instructional tone when the name hints at it (common on RU engines).
+            if (listOf("female", "woman", "irina", "milena", "oksana", "jane").any { it in name }) {
+                s += 8
+            }
+            return s
+        }
+        return russian.maxByOrNull(::score)
+    }
 }
 
 /**
  * Plays pre-recorded MP3 files from the optional audio pack.
- *
- * The audio pack is a directory at `filesDir/audio-pack/` that the user can populate manually
- * (e.g. by dropping files via a file manager or via an in-app future "import audio pack"
- * feature). Each pose is identified by `<poseId>.mp3` (e.g. `tadasana.mp3`).
- *
- * Files are played via [android.media.MediaPlayer] so they stream from disk and don't sit
- * in memory.
- *
- * The class is intentionally NOT bound to a Hilt interface — it's used only via
- * [TtsPoseAudioPlayer] as a fallback when [hasPose] returns true.
  */
 @Singleton
 class Mp3PackPoseAudioPlayer @Inject constructor(

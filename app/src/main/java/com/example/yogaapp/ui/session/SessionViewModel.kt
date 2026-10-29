@@ -7,9 +7,11 @@ import android.net.Uri
 import com.example.yogaapp.data.audio.PoseAudioPlayer
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.audio.PracticeMelodyPlayer
+import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.SettingsDataStore
 import com.example.yogaapp.domain.model.DayPoseEntry
 import com.example.yogaapp.domain.model.PoseSide
+import com.example.yogaapp.domain.model.WorkoutBlocks
 import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.repository.YogaRepository
 import com.example.yogaapp.domain.usecase.RecordCompletionUseCase
@@ -52,12 +54,21 @@ class SessionViewModel @Inject constructor(
     private val _melody = MutableStateFlow(PracticeMelody.BuiltIn)
     val melody: StateFlow<PracticeMelody> = _melody.asStateFlow()
 
+    private val _voiceEnabled = MutableStateFlow(true)
+    val voiceEnabled: StateFlow<Boolean> = _voiceEnabled.asStateFlow()
+
     private var sessionActive = false
     private var userPaused = false
     private var currentMelody = PracticeMelody.BuiltIn
     private var customMusicUri: Uri? = null
 
     init {
+        viewModelScope.launch {
+            settingsDataStore.audioMode.collect { mode ->
+                _voiceEnabled.value = mode != AudioMode.Off
+                if (mode == AudioMode.Off) audioPlayer.stop()
+            }
+        }
         viewModelScope.launch {
             combine(
                 settingsDataStore.practiceMelody,
@@ -89,6 +100,7 @@ class SessionViewModel @Inject constructor(
             val customDays = repository.observeCustomDays().first()
             val day = program?.days?.firstOrNull { it.id == dayId }
                 ?: customDays.firstOrNull { it.id == dayId }
+                ?: WorkoutBlocks.byId(dayId)
             if (day == null) {
                 sessionActive = false
                 melodyPlayer.stop()
@@ -205,6 +217,19 @@ class SessionViewModel @Inject constructor(
                 PracticeMelody.YandexMusic -> _effects.send(SessionEffect.OpenYandexMusic)
                 PracticeMelody.External -> _effects.send(SessionEffect.OpenSystemMusic)
                 else -> Unit
+            }
+        }
+    }
+
+    fun setVoiceEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            if (enabled) {
+                if (settingsDataStore.audioMode.first() == AudioMode.Off) {
+                    settingsDataStore.setAudioMode(AudioMode.Tts)
+                }
+            } else {
+                audioPlayer.stop()
+                settingsDataStore.setAudioMode(AudioMode.Off)
             }
         }
     }

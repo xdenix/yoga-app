@@ -1,6 +1,7 @@
 package com.example.yogaapp.domain.usecase
 
 import com.example.yogaapp.domain.model.BodyFocus
+import com.example.yogaapp.domain.model.DayPlanTemplates
 import com.example.yogaapp.domain.model.PoseLibrary
 import com.example.yogaapp.domain.model.YogaDay
 import com.example.yogaapp.domain.model.YogaLevel
@@ -8,13 +9,12 @@ import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.model.YogaProgram
 import com.example.yogaapp.domain.model.YogaRules
 import javax.inject.Inject
-import kotlin.random.Random
 
 /**
  * Generates a 30-day yoga program for the chosen level.
  *
- * Each day gets approximately [posesPerDay] timed slots (seeded by day number).
- * Bilateral asanas expand to right + left and count as two slots; savasana stays last.
+ * Days follow curated [DayPlanTemplates] sequences (warm-up → peak → cool-down)
+ * rather than a random shuffle. Bilateral asanas expand to right + left; savasana stays last.
  */
 class GenerateProgramUseCase @Inject constructor() {
 
@@ -27,13 +27,15 @@ class GenerateProgramUseCase @Inject constructor() {
             "Pose library must contain poses for level $level"
         }
         val count = posesPerDay.coerceIn(YogaRules.MIN_POSES_PER_DAY, YogaRules.MAX_POSES_PER_DAY)
+        val byId = eligible.associateBy { it.id }
 
         val days = (1..YogaRules.PROGRAM_DAYS).map { dayNum ->
-            val dailyPoses = pickForDay(dayNum, level, eligible, count)
+            val plan = DayPlanTemplates.planForDay(level, dayNum)
+            val dailyPoses = buildDayFromPlan(plan, byId, eligible, count, dayNum, level)
             YogaDay(
                 id = "program-$dayNum",
                 dayNumber = dayNum,
-                title = titleForDay(dayNum),
+                title = "День $dayNum: ${plan.titleRu}",
                 poses = YogaRules.toDayEntries(dailyPoses),
                 isCustom = false,
             )
@@ -46,54 +48,60 @@ class GenerateProgramUseCase @Inject constructor() {
         )
     }
 
-    private fun pickForDay(
+    /**
+     * Takes poses from the template in order, respecting level gates for early weeks,
+     * filling up to [slotLimit] after bilateral expansion, always ending with rest.
+     */
+    private fun buildDayFromPlan(
+        plan: DayPlanTemplates.Plan,
+        byId: Map<String, YogaPose>,
+        pool: List<YogaPose>,
+        slotLimit: Int,
         dayNum: Int,
         level: YogaLevel,
-        pool: List<YogaPose>,
-        count: Int,
     ): List<YogaPose> {
-        val phasePool = when {
-            dayNum <= 7 -> pool.filter { it.level == YogaLevel.Beginner }
-            dayNum <= 15 && level != YogaLevel.Beginner ->
-                pool.filter { it.level != YogaLevel.Advanced }
-            level == YogaLevel.Advanced -> pool
-            else -> pool.filter { it.level != YogaLevel.Advanced }
-        }.ifEmpty { pool }
+        val phaseOk: (YogaPose) -> Boolean = when {
+            dayNum <= 7 -> { p -> p.level == YogaLevel.Beginner }
+            dayNum <= 15 && level != YogaLevel.Beginner -> { p -> p.level != YogaLevel.Advanced }
+            level == YogaLevel.Advanced -> { _ -> true }
+            else -> { p -> p.level != YogaLevel.Advanced }
+        }
 
-        val rest = phasePool.firstOrNull { it.id == "savasana" }
-            ?: phasePool.firstOrNull { BodyFocus.Rest in it.focuses }
-        val bodyPool = phasePool.filter { it.id != rest?.id }
-        val rng = Random(dayNum * 31L + level.ordinal * 17L + count * 13L)
-        val bodyLimit = if (rest != null) (count - 1).coerceAtLeast(0) else count
-        val body = fillSlots(bodyPool.shuffled(rng).distinctBy { it.id }, bodyLimit)
+        val rest = byId["savasana"]
+            ?: pool.firstOrNull { BodyFocus.Rest in it.focuses }
+        val bodyLimit = if (rest != null) (slotLimit - 1).coerceAtLeast(0) else slotLimit
+
+        val ordered = LinkedHashSet<YogaPose>()
+        for (id in plan.poseIds) {
+            if (id == rest?.id) continue
+            val pose = byId[id] ?: continue
+            if (!phaseOk(pose)) continue
+            ordered += pose
+        }
+        // Fill gaps from the same pedagogical buckets if the template was filtered heavily.
+        if (ordered.sumOf { YogaRules.slotCost(it) } < bodyLimit) {
+            for (pose in pool) {
+                if (pose.id == rest?.id) continue
+                if (!phaseOk(pose)) continue
+                ordered += pose
+                if (ordered.sumOf { YogaRules.slotCost(it) } >= bodyLimit) break
+            }
+        }
+
+        val body = trimToSlotLimit(ordered.toList(), bodyLimit)
         return if (rest != null) body + rest else body
     }
 
-    /**
-     * Picks unique poses until expanded slot count reaches [slotLimit].
-     * Skips a bilateral pose that would overshoot when a 1-slot pose could still fit.
-     */
-    private fun fillSlots(candidates: List<YogaPose>, slotLimit: Int): List<YogaPose> {
-        val picked = mutableListOf<YogaPose>()
+    private fun trimToSlotLimit(poses: List<YogaPose>, slotLimit: Int): List<YogaPose> {
+        val out = mutableListOf<YogaPose>()
         var slots = 0
-        for (p in candidates) {
+        for (p in poses) {
             if (slots >= slotLimit) break
             val cost = YogaRules.slotCost(p)
             if (slots + cost > slotLimit) continue
-            picked += p
+            out += p
             slots += cost
         }
-        return picked
-    }
-
-    private fun titleForDay(dayNum: Int): String = when {
-        dayNum == 1 -> "День 1: Знакомство с дыханием"
-        dayNum == 7 -> "День 7: Контрольная точка"
-        dayNum == 15 -> "День 15: Половина пути"
-        dayNum == 30 -> "День 30: Итоговая сессия"
-        dayNum <= 7 -> "День $dayNum: Основы"
-        dayNum <= 15 -> "День $dayNum: Углубление"
-        dayNum <= 22 -> "День $dayNum: Сила и баланс"
-        else -> "День $dayNum: Интеграция"
+        return out
     }
 }

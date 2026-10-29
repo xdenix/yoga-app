@@ -64,6 +64,11 @@
 
     <!-- Program plan -->
     <string name="program_title">Ваш план на 30 дней</string>
+    <string name="blocks_section_title">Отдельные блоки</string>
+    <string name="block_weight_loss_title">Похудение · йога</string>
+    <string name="block_weight_loss_subtitle">Динамическая йога-сессия для тонуса и расхода калорий</string>
+    <string name="block_strength_title">Силовой блок</string>
+    <string name="block_strength_subtitle">15 силовых упражнений с картинками</string>
     <string name="program_progress">Прогресс: %1$d из 30 дней</string>
     <string name="program_day_template">День %1$d</string>
     <string name="program_poses_count_template">%1$d поз</string>
@@ -133,8 +138,12 @@
     <string name="settings_theme_dark">Тёмная (по умолчанию)</string>
     <string name="settings_dynamic_color_title">Динамические цвета</string>
     <string name="settings_dynamic_color_subtitle">Подстраивать палитру под обои (Android 12+)</string>
-    <string name="settings_section_audio">Аудио</string>
+    <string name="settings_section_audio">Голос поз</string>
+    <string name="settings_voice_enabled">Озвучка упражнений</string>
+    <string name="settings_voice_enabled_subtitle">Независимо от фоновой музыки</string>
     <string name="settings_section_melody">Музыка для практики</string>
+    <string name="session_voice_on">Голос вкл.</string>
+    <string name="session_voice_off">Голос выкл.</string>
     <string name="melody_off">Без музыки</string>
     <string name="melody_builtin_dervish">Встроенная (суфийская церемония)</string>
     <string name="melody_from_file">Файл из папки</string>

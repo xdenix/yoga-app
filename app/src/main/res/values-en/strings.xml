@@ -56,6 +56,11 @@
     <string name="onboarding_choose_level_body">This determines the difficulty and duration of your 30-day plan.</string>
 
     <string name="program_title">Your 30-day plan</string>
+    <string name="blocks_section_title">Standalone blocks</string>
+    <string name="block_weight_loss_title">Weight loss · yoga</string>
+    <string name="block_weight_loss_subtitle">Dynamic yoga session for tone and calorie burn</string>
+    <string name="block_strength_title">Strength block</string>
+    <string name="block_strength_subtitle">15 strength moves with illustrations</string>
     <string name="program_progress">Progress: %1$d of 30 days</string>
     <string name="program_day_template">Day %1$d</string>
     <string name="program_poses_count_template">%1$d poses</string>
@@ -120,8 +125,12 @@
     <string name="settings_theme_dark">Dark (default)</string>
     <string name="settings_dynamic_color_title">Dynamic colors</string>
     <string name="settings_dynamic_color_subtitle">Match palette to wallpaper (Android 12+)</string>
-    <string name="settings_section_audio">Audio</string>
+    <string name="settings_section_audio">Pose voice</string>
+    <string name="settings_voice_enabled">Pose narration</string>
+    <string name="settings_voice_enabled_subtitle">Independent from background music</string>
     <string name="settings_section_melody">Practice music</string>
+    <string name="session_voice_on">Voice on</string>
+    <string name="session_voice_off">Voice off</string>
     <string name="melody_off">No music</string>
     <string name="melody_builtin_dervish">Built-in (Sufi ceremony)</string>
     <string name="melody_from_file">File from folder</string>

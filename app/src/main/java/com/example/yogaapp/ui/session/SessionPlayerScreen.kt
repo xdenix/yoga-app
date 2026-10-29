@@ -64,6 +64,7 @@ fun SessionPlayerScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val melody by viewModel.melody.collectAsStateWithLifecycle()
+    val voiceEnabled by viewModel.voiceEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -101,8 +102,10 @@ fun SessionPlayerScreen(
                 is SessionUiState.Running -> RunningContent(
                     state = s,
                     melody = melody,
+                    voiceEnabled = voiceEnabled,
                     onEvent = viewModel::onEvent,
                     onMelody = viewModel::setMelody,
+                    onVoiceEnabled = viewModel::setVoiceEnabled,
                 )
                 SessionUiState.Finished -> FinishedContent(
                     onComplete = { viewModel.onEvent(SessionEvent.Complete) },
@@ -122,8 +125,10 @@ fun SessionPlayerScreen(
 private fun RunningContent(
     state: SessionUiState.Running,
     melody: PracticeMelody,
+    voiceEnabled: Boolean,
     onEvent: (SessionEvent) -> Unit,
     onMelody: (PracticeMelody) -> Unit,
+    onVoiceEnabled: (Boolean) -> Unit,
 ) {
     val current = state.current
     val progress = if (state.totalSec > 0) {
@@ -169,6 +174,17 @@ private fun RunningContent(
                     )
                 }
             }
+            FilterChip(
+                selected = voiceEnabled,
+                onClick = { onVoiceEnabled(!voiceEnabled) },
+                label = {
+                    Text(
+                        stringResource(
+                            if (voiceEnabled) R.string.session_voice_on else R.string.session_voice_off,
+                        ),
+                    )
+                },
+            )
             Text(
                 text = stringResource(R.string.session_melody),
                 style = MaterialTheme.typography.labelMedium,

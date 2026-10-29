@@ -135,23 +135,31 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_audio))
-            AudioModeRow(current = state.audioMode, onSelect = viewModel::setAudioMode)
-            Text(
-                text = if (state.hasAudioPack) {
-                    stringResource(R.string.settings_audio_pack_status_installed)
-                } else {
-                    stringResource(R.string.settings_audio_pack_status_missing)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp),
+            SwitchRow(
+                title = stringResource(R.string.settings_voice_enabled),
+                subtitle = stringResource(R.string.settings_voice_enabled_subtitle),
+                checked = state.audioMode != AudioMode.Off,
+                onCheckedChange = viewModel::setVoiceEnabled,
             )
-            Text(
-                text = stringResource(R.string.settings_audio_pack_hint),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
+            if (state.audioMode != AudioMode.Off) {
+                AudioModeRow(current = state.audioMode, onSelect = viewModel::setAudioMode)
+                Text(
+                    text = if (state.hasAudioPack) {
+                        stringResource(R.string.settings_audio_pack_status_installed)
+                    } else {
+                        stringResource(R.string.settings_audio_pack_status_missing)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+                Text(
+                    text = stringResource(R.string.settings_audio_pack_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_melody))
             MelodyRow(current = state.melody, onSelect = viewModel::setMelody)
@@ -361,7 +369,6 @@ private fun MelodyRow(current: PracticeMelody, onSelect: (PracticeMelody) -> Uni
 @Composable
 private fun AudioModeRow(current: AudioMode, onSelect: (AudioMode) -> Unit) {
     val options = listOf(
-        AudioMode.Off to R.string.settings_audio_mode_off,
         AudioMode.Tts to R.string.settings_audio_mode_tts,
         AudioMode.Mp3Pack to R.string.settings_audio_mode_mp3,
     )

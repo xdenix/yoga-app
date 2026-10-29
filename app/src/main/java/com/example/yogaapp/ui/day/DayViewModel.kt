@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.yogaapp.data.datastore.SettingsDataStore
 import com.example.yogaapp.domain.model.DayPoseEntry
 import com.example.yogaapp.domain.model.PoseSide
+import com.example.yogaapp.domain.model.WorkoutBlocks
 import com.example.yogaapp.domain.model.YogaDay
 import com.example.yogaapp.domain.model.YogaPose
 import com.example.yogaapp.domain.repository.YogaRepository
@@ -53,6 +54,7 @@ class DayViewModel @Inject constructor(
             val customDays = repository.observeCustomDays().first()
             val day = program?.days?.firstOrNull { it.id == dayId }
                 ?: customDays.firstOrNull { it.id == dayId }
+                ?: WorkoutBlocks.byId(dayId)
             if (day == null) {
                 _uiState.value = DayUiState.NotFound
                 return@launch
@@ -178,6 +180,7 @@ class DayViewModel @Inject constructor(
 
     private fun skipDay() {
         val state = _uiState.value as? DayUiState.Content ?: return
+        if (WorkoutBlocks.byId(state.day.id) != null) return
         viewModelScope.launch(dispatchers.io) {
             repository.skipDay(state.day.dayNumber, autoShift = true)
             _effects.send(DayEffect.Snackbar(com.example.yogaapp.R.string.day_skip))
@@ -185,6 +188,8 @@ class DayViewModel @Inject constructor(
     }
 
     private fun persistDay(day: YogaDay) {
+        // Built-in workout blocks are code-defined templates — edits stay in-memory for the session.
+        if (WorkoutBlocks.byId(day.id) != null) return
         viewModelScope.launch(dispatchers.io) {
             runCatching { repository.updateProgramDay(day) }
                 .onFailure { error ->

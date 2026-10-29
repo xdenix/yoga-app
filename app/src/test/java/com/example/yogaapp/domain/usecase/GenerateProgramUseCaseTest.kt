@@ -74,6 +74,20 @@ class GenerateProgramUseCaseTest {
     }
 
     @Test
+    fun `should follow curated plan order not random shuffle`() {
+        val program = useCase(YogaLevel.Beginner, posesPerDay = 10)
+        val day1 = program.days.first()
+        assertTrue(day1.title.contains("Утренние основы"), "Day 1 title was ${day1.title}")
+        // First non-rest body pose of morningBasics after filtering is cat-cow or child's.
+        val firstId = day1.poses.first().poseId
+        assertTrue(
+            firstId in setOf("marjaryasana_bitilasana", "balasana", "adho_mukha_svanasana", "tadasana"),
+            "Unexpected first pose $firstId",
+        )
+        assertEquals("savasana", day1.poses.last().poseId)
+    }
+
+    @Test
     fun `should generate stable day ids program-N`() {
         val program = useCase(YogaLevel.Beginner)
         program.days.forEachIndexed { idx, day ->

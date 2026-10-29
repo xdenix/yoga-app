@@ -152,6 +152,9 @@ private fun ProgramBody(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
+            WorkoutBlocksSection(onDayClick = onDayClick, onSessionClick = onSessionClick)
+        }
+        item {
             ProgressHeader(
                 completedCount = state.completedCount,
                 totalCount = state.days.size,
@@ -168,6 +171,69 @@ private fun ProgramBody(
                 onStartSession = { onSessionClick(day.id) },
                 onSkip = { onSkipDay(day.dayNumber) },
             )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutBlocksSection(
+    onDayClick: (String) -> Unit,
+    onSessionClick: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.blocks_section_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        BlockCard(
+            title = stringResource(R.string.block_weight_loss_title),
+            subtitle = stringResource(R.string.block_weight_loss_subtitle),
+            onOpen = { onDayClick(com.example.yogaapp.domain.model.WorkoutBlocks.WEIGHT_LOSS_ID) },
+            onStart = { onSessionClick(com.example.yogaapp.domain.model.WorkoutBlocks.WEIGHT_LOSS_ID) },
+        )
+        BlockCard(
+            title = stringResource(R.string.block_strength_title),
+            subtitle = stringResource(R.string.block_strength_subtitle),
+            onOpen = { onDayClick(com.example.yogaapp.domain.model.WorkoutBlocks.STRENGTH_ID) },
+            onStart = { onSessionClick(com.example.yogaapp.domain.model.WorkoutBlocks.STRENGTH_ID) },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BlockCard(
+    title: String,
+    subtitle: String,
+    onOpen: () -> Unit,
+    onStart: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        ),
+        onClick = onOpen,
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
+            )
+            androidx.compose.material3.TextButton(onClick = onStart) {
+                Text(stringResource(R.string.action_start_session))
+            }
         }
     }
 }

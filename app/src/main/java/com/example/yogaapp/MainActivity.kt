@@ -1,6 +1,7 @@
 package com.example.yogaapp
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -38,6 +39,8 @@ class MainActivity : ComponentActivity() {
                 darkScrim = Color.Transparent.toArgb(),
             ),
         )
+        // Practice sessions are long — keep the display awake while the app is visible.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContent {
             YogaAppTheme {
                 Surface(

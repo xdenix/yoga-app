@@ -22,7 +22,8 @@ package com.example.yogaapp.domain.model
  */
 object PoseLibrary {
 
-    val all: List<YogaPose> = listOf(
+    /** Классические асаны (без силового блока). */
+    private val yogaPoses: List<YogaPose> = listOf(
         // ============== BEGINNER (15 poses) ==============
         pose(
             id = "tadasana",
@@ -852,16 +853,19 @@ object PoseLibrary {
         ),
     )
 
+    /** Full catalog: yoga asanas + strength block (for Room seed / lookup). */
+    val all: List<YogaPose> = yogaPoses + StrengthLibrary.all
+
     /** Lookup helper — returns the matching pose or null for an unknown id. */
     fun byId(id: String): YogaPose? = all.firstOrNull { it.id == id }
 
-    /** Poses suitable for a given level — used by the plan generator. */
+    /** Poses suitable for a given level — 30-day plan only (yoga, not strength). */
     fun forLevel(level: YogaLevel): List<YogaPose> = when (level) {
-        YogaLevel.Beginner -> all.filter { it.level == YogaLevel.Beginner }
-        YogaLevel.Intermediate -> all.filter {
+        YogaLevel.Beginner -> yogaPoses.filter { it.level == YogaLevel.Beginner }
+        YogaLevel.Intermediate -> yogaPoses.filter {
             it.level == YogaLevel.Beginner || it.level == YogaLevel.Intermediate
         }
-        YogaLevel.Advanced -> all
+        YogaLevel.Advanced -> yogaPoses
     }
 
     private fun pose(
