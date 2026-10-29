@@ -56,7 +56,11 @@
     <string name="onboarding_choose_level_body">This determines the difficulty and duration of your 30-day plan.</string>
 
     <string name="program_title">Your 30-day plan</string>
-    <string name="blocks_section_title">Standalone blocks</string>
+    <string name="program_hub_title">Practice blocks</string>
+    <string name="blocks_section_title">Choose a block</string>
+    <string name="block_plan_title">Program · 30 days</string>
+    <string name="block_plan_subtitle">Progress: %1$d of %2$d · now: %3$s</string>
+    <string name="block_plan_continue">Continue day</string>
     <string name="block_weight_loss_title">Weight loss · yoga</string>
     <string name="block_weight_loss_subtitle">Dynamic yoga session for tone and calorie burn</string>
     <string name="block_strength_title">Strength block</string>

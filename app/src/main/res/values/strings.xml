@@ -64,7 +64,11 @@
 
     <!-- Program plan -->
     <string name="program_title">Ваш план на 30 дней</string>
-    <string name="blocks_section_title">Отдельные блоки</string>
+    <string name="program_hub_title">Блоки практики</string>
+    <string name="blocks_section_title">Выберите блок</string>
+    <string name="block_plan_title">Программа · 30 дней</string>
+    <string name="block_plan_subtitle">Прогресс: %1$d из %2$d · сейчас: %3$s</string>
+    <string name="block_plan_continue">Продолжить день</string>
     <string name="block_weight_loss_title">Похудение · йога</string>
     <string name="block_weight_loss_subtitle">Динамическая йога-сессия для тонуса и расхода калорий</string>
     <string name="block_strength_title">Силовой блок</string>

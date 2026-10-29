@@ -1,5 +1,6 @@
 package com.example.yogaapp.ui.program
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,12 +8,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Settings
@@ -29,15 +33,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -46,12 +55,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.yogaapp.R
+import com.example.yogaapp.domain.model.WorkoutBlocks
 import com.example.yogaapp.domain.model.YogaDay
 import com.example.yogaapp.ui.components.EmptyState
 import com.example.yogaapp.ui.components.ErrorState
 import com.example.yogaapp.ui.components.LoadingState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,6 +82,7 @@ fun ProgramScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var showPlanDays by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -85,29 +101,58 @@ fun ProgramScreen(
         }
     }
 
+    BackHandler(enabled = showPlanDays) { showPlanDays = false }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.program_title)) },
-                actions = {
-                    val cdLibrary = stringResource(R.string.library_title)
-                    IconButton(onClick = onLibraryClick, modifier = Modifier.semantics { contentDescription = cdLibrary }) {
-                        Icon(Icons.Filled.AutoStories, contentDescription = null)
+                title = {
+                    Text(
+                        stringResource(
+                            if (showPlanDays) R.string.block_plan_title else R.string.program_hub_title,
+                        ),
+                    )
+                },
+                navigationIcon = {
+                    if (showPlanDays) {
+                        val cd = stringResource(R.string.cd_back)
+                        IconButton(
+                            onClick = { showPlanDays = false },
+                            modifier = Modifier.semantics { contentDescription = cd },
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
                     }
-                    val cdSettings = stringResource(R.string.cd_settings)
-                    IconButton(onClick = onSettingsClick, modifier = Modifier.semantics { contentDescription = cdSettings }) {
-                        Icon(Icons.Filled.Settings, contentDescription = null)
+                },
+                actions = {
+                    if (!showPlanDays) {
+                        val cdLibrary = stringResource(R.string.library_title)
+                        IconButton(
+                            onClick = onLibraryClick,
+                            modifier = Modifier.semantics { contentDescription = cdLibrary },
+                        ) {
+                            Icon(Icons.Filled.AutoStories, contentDescription = null)
+                        }
+                        val cdSettings = stringResource(R.string.cd_settings)
+                        IconButton(
+                            onClick = onSettingsClick,
+                            modifier = Modifier.semantics { contentDescription = cdSettings },
+                        ) {
+                            Icon(Icons.Filled.Settings, contentDescription = null)
+                        }
                     }
                 },
             )
         },
         floatingActionButton = {
-            val cd = stringResource(R.string.cd_create_day)
-            FloatingActionButton(
-                onClick = onCreateCustomDay,
-                modifier = Modifier.semantics { contentDescription = cd },
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
+            if (showPlanDays) {
+                val cd = stringResource(R.string.cd_create_day)
+                FloatingActionButton(
+                    onClick = onCreateCustomDay,
+                    modifier = Modifier.semantics { contentDescription = cd },
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -127,19 +172,92 @@ fun ProgramScreen(
                 onRetry = { viewModel.onEvent(ProgramEvent.Retry) },
                 modifier = Modifier.padding(padding),
             )
-            is ProgramUiState.Content -> ProgramBody(
-                state = s,
-                onDayClick = onDayClick,
-                onSessionClick = onSessionClick,
-                onSkipDay = { dayNum -> viewModel.onEvent(ProgramEvent.SkipDay(dayNum)) },
-                modifier = Modifier.padding(padding),
+            is ProgramUiState.Content -> {
+                if (showPlanDays) {
+                    PlanDaysBody(
+                        state = s,
+                        onDayClick = onDayClick,
+                        onSessionClick = onSessionClick,
+                        onSkipDay = { dayNum -> viewModel.onEvent(ProgramEvent.SkipDay(dayNum)) },
+                        modifier = Modifier.padding(padding),
+                    )
+                } else {
+                    BlocksHubBody(
+                        state = s,
+                        onOpenPlan = { showPlanDays = true },
+                        onDayClick = onDayClick,
+                        onSessionClick = onSessionClick,
+                        modifier = Modifier.padding(padding),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BlocksHubBody(
+    state: ProgramUiState.Content,
+    onOpenPlan: () -> Unit,
+    onDayClick: (String) -> Unit,
+    onSessionClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val current = state.days.firstOrNull { it.dayNumber == state.currentDayNumber }
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.blocks_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        item {
+            BlockCard(
+                title = stringResource(R.string.block_plan_title),
+                subtitle = stringResource(
+                    R.string.block_plan_subtitle,
+                    state.completedCount,
+                    state.days.size,
+                    current?.title ?: stringResource(R.string.program_day_template, state.currentDayNumber),
+                ),
+                coverAssetPath = "blocks/cover_plan.jpg",
+                onOpen = onOpenPlan,
+                onStart = {
+                    val dayId = current?.id
+                    if (dayId != null) onSessionClick(dayId) else onOpenPlan()
+                },
+                startLabel = stringResource(R.string.block_plan_continue),
+            )
+        }
+        item {
+            BlockCard(
+                title = stringResource(R.string.block_weight_loss_title),
+                subtitle = stringResource(R.string.block_weight_loss_subtitle),
+                coverAssetPath = "blocks/cover_weight_loss.jpg",
+                onOpen = { onDayClick(WorkoutBlocks.WEIGHT_LOSS_ID) },
+                onStart = { onSessionClick(WorkoutBlocks.WEIGHT_LOSS_ID) },
+            )
+        }
+        item {
+            BlockCard(
+                title = stringResource(R.string.block_strength_title),
+                subtitle = stringResource(R.string.block_strength_subtitle),
+                coverAssetPath = "blocks/cover_strength.jpg",
+                onOpen = { onDayClick(WorkoutBlocks.STRENGTH_ID) },
+                onStart = { onSessionClick(WorkoutBlocks.STRENGTH_ID) },
             )
         }
     }
 }
 
 @Composable
-private fun ProgramBody(
+private fun PlanDaysBody(
     state: ProgramUiState.Content,
     onDayClick: (String) -> Unit,
     onSessionClick: (String) -> Unit,
@@ -151,9 +269,6 @@ private fun ProgramBody(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item {
-            WorkoutBlocksSection(onDayClick = onDayClick, onSessionClick = onSessionClick)
-        }
         item {
             ProgressHeader(
                 completedCount = state.completedCount,
@@ -175,42 +290,15 @@ private fun ProgramBody(
     }
 }
 
-@Composable
-private fun WorkoutBlocksSection(
-    onDayClick: (String) -> Unit,
-    onSessionClick: (String) -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.blocks_section_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        BlockCard(
-            title = stringResource(R.string.block_weight_loss_title),
-            subtitle = stringResource(R.string.block_weight_loss_subtitle),
-            onOpen = { onDayClick(com.example.yogaapp.domain.model.WorkoutBlocks.WEIGHT_LOSS_ID) },
-            onStart = { onSessionClick(com.example.yogaapp.domain.model.WorkoutBlocks.WEIGHT_LOSS_ID) },
-        )
-        BlockCard(
-            title = stringResource(R.string.block_strength_title),
-            subtitle = stringResource(R.string.block_strength_subtitle),
-            onOpen = { onDayClick(com.example.yogaapp.domain.model.WorkoutBlocks.STRENGTH_ID) },
-            onStart = { onSessionClick(com.example.yogaapp.domain.model.WorkoutBlocks.STRENGTH_ID) },
-        )
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BlockCard(
     title: String,
     subtitle: String,
+    coverAssetPath: String,
     onOpen: () -> Unit,
     onStart: () -> Unit,
+    startLabel: String = stringResource(R.string.action_start_session),
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -219,21 +307,66 @@ private fun BlockCard(
         ),
         onClick = onOpen,
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
+        Column {
+            BlockCoverImage(
+                assetPath = coverAssetPath,
+                contentDescription = title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(132.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
-            )
-            androidx.compose.material3.TextButton(onClick = onStart) {
-                Text(stringResource(R.string.action_start_session))
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
+                )
+                TextButton(onClick = onStart) {
+                    Text(startLabel)
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun BlockCoverImage(
+    assetPath: String,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val bytes by produceState<ByteArray?>(initialValue = null, assetPath) {
+        value = withContext(Dispatchers.IO) {
+            runCatching { context.assets.open(assetPath).use { it.readBytes() } }.getOrNull()
+        }
+    }
+    val request = remember(bytes) {
+        bytes?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(200)
+                .build()
+        }
+    }
+    Box(
+        modifier = modifier.semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (request != null) {
+            AsyncImage(
+                model = request,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }

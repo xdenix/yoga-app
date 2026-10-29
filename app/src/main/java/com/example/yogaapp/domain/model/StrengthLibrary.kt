@@ -1,7 +1,7 @@
 package com.example.yogaapp.domain.model
 
 /**
- * Силовой блок — 15 упражнений с собственными иллюстрациями в `assets/poses/{id}.jpg`.
+ * Силовой блок — 15 упражнений; фото в `assets/poses/{id}.jpg` в стиле основных поз йоги.
  * Не входят в выборку 30-дневного йога-плана ([PoseLibrary.forLevel]), только в [WorkoutBlocks].
  */
 object StrengthLibrary {
