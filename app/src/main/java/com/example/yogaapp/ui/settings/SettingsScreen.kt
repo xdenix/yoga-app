@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -59,6 +58,7 @@ import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.ThemeMode
 import com.example.yogaapp.domain.model.YogaRules
+import com.example.yogaapp.ui.components.IntCounter
 import com.example.yogaapp.ui.components.title
 import com.example.yogaapp.update.CheckResult
 import com.example.yogaapp.update.GithubAppUpdater
@@ -190,41 +190,36 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
             )
-            Text(
-                text = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Slider(
-                value = state.posesPerDay.toFloat(),
-                onValueChange = { viewModel.setPosesPerDay(it.toInt()) },
-                valueRange = YogaRules.MIN_POSES_PER_DAY.toFloat()..YogaRules.MAX_POSES_PER_DAY.toFloat(),
-                steps = YogaRules.MAX_POSES_PER_DAY - YogaRules.MIN_POSES_PER_DAY - 1,
+            IntCounter(
+                value = state.posesPerDay,
+                onValueChange = viewModel::setPosesPerDay,
+                valueRange = YogaRules.MIN_POSES_PER_DAY..YogaRules.MAX_POSES_PER_DAY,
+                step = 1,
+                valueText = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
             )
             Text(
                 text = stringResource(R.string.settings_global_duration),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
             )
-            DurationSlider(
+            IntCounter(
                 value = state.globalDurationSec,
-                onChange = viewModel::setGlobalDuration,
+                onValueChange = viewModel::setGlobalDuration,
+                valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
+                step = 5,
+                valueText = stringResource(R.string.settings_global_duration_value, state.globalDurationSec),
             )
             Text(
                 text = stringResource(R.string.settings_pause_between),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
             )
-            Text(
-                text = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Slider(
-                value = state.pauseBetweenSec.toFloat(),
-                onValueChange = { viewModel.setPauseBetweenSec(it.toInt()) },
-                valueRange = YogaRules.MIN_PAUSE_SEC.toFloat()..YogaRules.MAX_PAUSE_SEC.toFloat(),
-                steps = 23,
+            IntCounter(
+                value = state.pauseBetweenSec,
+                onValueChange = viewModel::setPauseBetweenSec,
+                valueRange = YogaRules.MIN_PAUSE_SEC..YogaRules.MAX_PAUSE_SEC,
+                step = 5,
+                valueText = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_progress))
@@ -339,6 +334,7 @@ private fun ThemeModeRow(current: ThemeMode, onSelect: (ThemeMode) -> Unit) {
         ThemeMode.System to R.string.settings_theme_system,
         ThemeMode.Light to R.string.settings_theme_light,
         ThemeMode.Dark to R.string.settings_theme_dark,
+        ThemeMode.DustyRose to R.string.settings_theme_dusty_rose,
     )
     options.forEach { (mode, labelRes) ->
         val label = stringResource(labelRes)
@@ -399,23 +395,6 @@ private fun AudioModeRow(current: AudioMode, onSelect: (AudioMode) -> Unit) {
             RadioButton(selected = current == mode, onClick = { onSelect(mode) })
             Text(label, modifier = Modifier.padding(start = 8.dp))
         }
-    }
-}
-
-@Composable
-private fun DurationSlider(value: Int, onChange: (Int) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text(
-            text = stringResource(R.string.settings_global_duration_value, value),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-        )
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onChange(it.toInt()) },
-            valueRange = YogaRules.MIN_DURATION_SEC.toFloat()..YogaRules.MAX_DURATION_SEC.toFloat(),
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 

@@ -30,13 +30,37 @@ fun YogaAppTheme(
 ) {
     val isDark = when (themeMode) {
         ThemeMode.System -> isSystemInDarkTheme()
-        ThemeMode.Light -> false
+        ThemeMode.Light, ThemeMode.DustyRose -> false
         ThemeMode.Dark -> true
     }
     val context = LocalContext.current
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            themeMode != ThemeMode.DustyRose ->
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        themeMode == ThemeMode.DustyRose -> lightColorScheme(
+            primary = RosePrimary,
+            onPrimary = RoseOnPrimary,
+            primaryContainer = RosePrimaryContainer,
+            onPrimaryContainer = RoseOnPrimaryContainer,
+            secondary = RoseSecondary,
+            onSecondary = RoseOnSecondary,
+            secondaryContainer = RoseSecondaryContainer,
+            onSecondaryContainer = RoseOnSecondaryContainer,
+            tertiary = RoseTertiary,
+            onTertiary = RoseOnTertiary,
+            tertiaryContainer = RoseTertiaryContainer,
+            onTertiaryContainer = RoseOnTertiaryContainer,
+            background = RoseBackground,
+            onBackground = RoseOnBackground,
+            surface = RoseSurface,
+            onSurface = RoseOnSurface,
+            surfaceVariant = RoseSurfaceVariant,
+            onSurfaceVariant = RoseOnSurfaceVariant,
+            error = RoseError,
+            onError = RoseOnError,
+            outline = RoseOutline,
+        )
         isDark -> darkColorScheme(
             primary = DarkPrimary,
             onPrimary = DarkOnPrimary,

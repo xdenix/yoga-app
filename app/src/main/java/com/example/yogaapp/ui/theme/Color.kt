@@ -65,3 +65,29 @@ internal val LightOutline = Color(0xFF8C7E72)
 internal val LevelBeginner = Color(0xFFC4A574)          // caramel
 internal val LevelIntermediate = Color(0xFFA67C52)     // medium brown
 internal val LevelAdvanced = Color(0xFF5C4033)          // dark chocolate
+
+// ── Dusty Rose theme (light, muted rose / mauve) ───────────────────────────────
+internal val RosePrimary = Color(0xFF9A6B6E)            // dusty rose
+internal val RoseOnPrimary = Color(0xFFFFF7F6)
+internal val RosePrimaryContainer = Color(0xFFE8C9C8)
+internal val RoseOnPrimaryContainer = Color(0xFF3A2224)
+
+internal val RoseSecondary = Color(0xFF8B6F6A)          // warm mauve-taupe
+internal val RoseOnSecondary = Color(0xFFFFF7F6)
+internal val RoseSecondaryContainer = Color(0xFFF0DDDA)
+internal val RoseOnSecondaryContainer = Color(0xFF3A2826)
+
+internal val RoseTertiary = Color(0xFF7A6A74)           // muted lilac-gray
+internal val RoseOnTertiary = Color(0xFFFFF7F8)
+internal val RoseTertiaryContainer = Color(0xFFE6DCE2)
+internal val RoseOnTertiaryContainer = Color(0xFF2E262C)
+
+internal val RoseBackground = Color(0xFFF7EEEE)         // soft blush paper
+internal val RoseOnBackground = Color(0xFF2E2425)
+internal val RoseSurface = Color(0xFFF1E4E3)
+internal val RoseOnSurface = Color(0xFF2E2425)
+internal val RoseSurfaceVariant = Color(0xFFE5D5D4)
+internal val RoseOnSurfaceVariant = Color(0xFF5C4C4B)
+internal val RoseError = Color(0xFFB33A4A)
+internal val RoseOnError = Color(0xFFFFFFFF)
+internal val RoseOutline = Color(0xFF9A8584)

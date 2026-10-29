@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -48,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.yogaapp.ui.components.IntCounter
 import com.example.yogaapp.R
 import com.example.yogaapp.domain.model.DayPoseEntry
 import com.example.yogaapp.domain.model.PoseSide
@@ -280,14 +279,16 @@ private fun PoseCard(
                     Icon(Icons.Outlined.Delete, contentDescription = null)
                 }
             }
-            Slider(
-                value = currentDuration.toFloat(),
-                onValueChange = { onSetDuration(it.toInt()) },
-                valueRange = YogaRules.MIN_DURATION_SEC.toFloat()..YogaRules.MAX_DURATION_SEC.toFloat(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 28.dp)
-                    .padding(start = 32.dp),
+            IntCounter(
+                value = currentDuration,
+                onValueChange = onSetDuration,
+                valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
+                step = 5,
+                valueText = stringResource(
+                    R.string.day_duration_template,
+                    YogaRules.durationLabel(currentDuration),
+                ),
+                modifier = Modifier.padding(start = 24.dp),
             )
         }
     }

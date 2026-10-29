@@ -5,4 +5,6 @@ enum class ThemeMode {
     System,
     Light,
     Dark,
+    /** Soft dusty-rose palette (light). */
+    DustyRose,
 }
