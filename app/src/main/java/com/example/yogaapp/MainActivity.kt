@@ -18,8 +18,8 @@ import com.example.yogaapp.ui.YogaAppRoot
 import com.example.yogaapp.ui.theme.YogaAppTheme
 import com.example.yogaapp.update.GithubAppUpdater
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-
 /**
  * Single-activity host. Uses Android 12+ system splash via androidx.core:splashscreen
  * (compatible with minSdk 26 via the SplashScreen compat API). Compose is installed via
@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val githubUpdater by lazy { GithubAppUpdater(this) }
+    private var autoUpdateJob: Job? = null
 
     /** Shared with Settings so pending APK install survives unknown-sources round-trip. */
     fun githubUpdaterForSettings(): GithubAppUpdater = githubUpdater
@@ -58,9 +59,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Continue APK install after user grants «Install unknown apps».
+        // Continue APK install / deferred update dialog after pause or unknown-sources.
         githubUpdater.onHostResumed()
-        lifecycleScope.launch {
+        // Debounce: each resume cancels the previous auto-check job.
+        autoUpdateJob?.cancel()
+        autoUpdateJob = lifecycleScope.launch {
             githubUpdater.check()
         }
     }

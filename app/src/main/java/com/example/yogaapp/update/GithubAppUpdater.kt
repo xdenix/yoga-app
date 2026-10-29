@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.example.yogaapp.BuildConfig
 import com.example.yogaapp.R
 import java.io.File
@@ -14,6 +16,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -23,18 +26,13 @@ import timber.log.Timber
 /**
  * Checks the public GitHub Releases API for a newer APK and offers to install it.
  * Asset name must contain the version code: `yoga-app-{versionCode}-…apk`.
- * Android always asks the user to confirm the package installer step.
  *
- * Two entry points:
- *  - [check]           — silent, used by MainActivity.onResume. Shows the install dialog
- *                        only when an update is available. Skipped if already prompted
- *                        in this process.
- *  - [checkExplicit]   — used by Settings → «Проверить обновления». Always re-checks
- *                        (even after a previous dismissal) and returns a [CheckResult]
- *                        so the caller can show a Snackbar for the NoUpdate/Error cases.
+ * Auto-[check] (MainActivity.onResume): delayed + retried — cold start often has no
+ * network yet, which previously failed silently and never showed a dialog.
+ * [checkExplicit] (Settings button) always re-checks and surfaces errors in the UI.
  *
- * Call [onHostResumed] from [Activity.onResume] so install continues after the user
- * grants «Install unknown apps» permission.
+ * Call [onHostResumed] from [Activity.onResume] so install / deferred dialog continue
+ * after unknown-sources settings or when the activity becomes resumed again.
  */
 class GithubAppUpdater(
     private val activity: Activity,
@@ -48,7 +46,6 @@ class GithubAppUpdater(
         .followSslRedirects(true)
         .build()
 
-    /** Long timeouts — release APKs are tens of MB. */
     private val downloadClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(5, TimeUnit.MINUTES)
@@ -62,34 +59,86 @@ class GithubAppUpdater(
     private val busy = AtomicBoolean(false)
     private var promptedThisProcess = false
     private val pendingInstallApk = AtomicReference<File?>(null)
+    private val deferredPrompt = AtomicReference<Pair<PendingUpdate, File>?>(null)
 
-    /** Retry package install after returning from unknown-sources settings. */
+    /** Retry package install / show deferred update dialog when the host is resumed. */
     fun onHostResumed() {
-        val apk = pendingInstallApk.get() ?: return
-        if (!apk.isFile || apk.length() <= 0L) {
-            pendingInstallApk.set(null)
-            return
+        val apk = pendingInstallApk.get()
+        if (apk != null) {
+            if (!apk.isFile || apk.length() <= 0L) {
+                pendingInstallApk.set(null)
+            } else if (
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+                activity.packageManager.canRequestPackageInstalls()
+            ) {
+                pendingInstallApk.set(null)
+                install(apk, rememberIfNeedPermission = false)
+            }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !activity.packageManager.canRequestPackageInstalls()
-        ) {
-            return
+        deferredPrompt.getAndSet(null)?.let { (update, file) ->
+            if (file.isFile && file.length() > 0L && isUiReady()) {
+                promptedThisProcess = true
+                askAndInstall(update, file)
+            } else if (file.isFile && file.length() > 0L) {
+                deferredPrompt.set(update to file)
+            }
         }
-        pendingInstallApk.set(null)
-        install(apk, rememberIfNeedPermission = false)
     }
 
-    /** Silent background check used by MainActivity.onResume. */
+    /**
+     * Silent background check used by MainActivity.onResume.
+     * Waits briefly for splash/network, retries a few times, then shows the dialog
+     * when the activity is resumed (otherwise defers until [onHostResumed]).
+     */
     suspend fun check() {
-        if (promptedThisProcess || !busy.compareAndSet(false, true)) return
+        if (promptedThisProcess) return
+        if (!busy.compareAndSet(false, true)) return
         try {
-            when (val found = withContext(Dispatchers.IO) { findUpdate() }) {
-                is FindOutcome.UpToDate, is FindOutcome.Failed -> return
-                is FindOutcome.Available -> {
-                    val apk = withContext(Dispatchers.IO) { download(found.update) }
-                        ?: return
+            // Let splash finish and connectivity settle after cold start.
+            delay(AUTO_CHECK_INITIAL_DELAY_MS)
+            if (promptedThisProcess) return
+
+            val update = run {
+                repeat(AUTO_CHECK_ATTEMPTS) { attempt ->
+                    when (val found = withContext(Dispatchers.IO) { findUpdate() }) {
+                        is FindOutcome.UpToDate -> return
+                        is FindOutcome.Failed -> {
+                            Timber.w("GitHub auto-check failed (%d): %s", attempt + 1, found.reason)
+                            if (attempt < AUTO_CHECK_ATTEMPTS - 1) {
+                                delay(AUTO_CHECK_RETRY_DELAY_MS * (attempt + 1))
+                            }
+                        }
+                        is FindOutcome.Available -> return@run found.update
+                    }
+                }
+                return
+            }
+
+            var apk: File? = null
+            for (attempt in 0 until AUTO_CHECK_ATTEMPTS) {
+                apk = withContext(Dispatchers.IO) { download(update) }
+                if (apk != null) break
+                Timber.w("GitHub auto-download failed (attempt %d)", attempt + 1)
+                if (attempt < AUTO_CHECK_ATTEMPTS - 1) {
+                    delay(AUTO_CHECK_RETRY_DELAY_MS * (attempt + 1))
+                }
+            }
+            val file = apk
+            if (file == null) {
+                // Last resort: same browser offer as the Settings button path.
+                withContext(Dispatchers.Main) {
+                    if (isUiReady()) offerBrowserDownload(update)
+                }
+                return
+            }
+
+            withContext(Dispatchers.Main) {
+                if (isUiReady()) {
                     promptedThisProcess = true
-                    withContext(Dispatchers.Main) { askAndInstall(found.update, apk) }
+                    askAndInstall(update, file)
+                } else {
+                    deferredPrompt.set(update to file)
+                    Timber.d("Update dialog deferred until next resume")
                 }
             }
         } catch (t: Throwable) {
@@ -102,8 +151,7 @@ class GithubAppUpdater(
     /**
      * Explicit check from the Settings screen. Always performs the network call (ignores
      * [promptedThisProcess]). Returns a [CheckResult] so the caller can reflect the
-     * outcome in the UI. When an update is available, the install dialog is shown
-     * exactly as in [check].
+     * outcome in the UI.
      */
     suspend fun checkExplicit(): CheckResult {
         if (!busy.compareAndSet(false, true)) return CheckResult.Busy
@@ -133,6 +181,12 @@ class GithubAppUpdater(
         } finally {
             busy.set(false)
         }
+    }
+
+    private fun isUiReady(): Boolean {
+        if (activity.isFinishing || activity.isDestroyed) return false
+        val owner = activity as? LifecycleOwner ?: return true
+        return owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
     }
 
     private fun findUpdate(): FindOutcome {
@@ -285,7 +339,10 @@ class GithubAppUpdater(
     )
 
     companion object {
-        /** Release assets must look like `yoga-app-{versionCode}-{versionName}.apk`. */
+        private const val AUTO_CHECK_INITIAL_DELAY_MS = 2_500L
+        private const val AUTO_CHECK_RETRY_DELAY_MS = 2_000L
+        private const val AUTO_CHECK_ATTEMPTS = 3
+
         private val VERSION_CODE_IN_NAME =
             Regex("""^yoga-app-(\d+)-.+\.apk$""", RegexOption.IGNORE_CASE)
 
@@ -294,13 +351,6 @@ class GithubAppUpdater(
     }
 }
 
-/**
- * Result of an explicit update check, used by the Settings screen.
- * - [NoUpdate]  — release on GitHub is not newer than the installed build.
- * - [Available] — newer release found; the install dialog has been shown.
- * - [Error]     — network or API failure.
- * - [Busy]     — another check is already in flight; retry later.
- */
 sealed interface CheckResult {
     data object NoUpdate : CheckResult
     data class Available(val label: String) : CheckResult
