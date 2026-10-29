@@ -187,7 +187,9 @@ class YogaRepositoryImpl @Inject constructor(
                 durationSec = durationSec,
             ),
         )
-        programDao.advanceCurrentDay()
+        if (com.example.yogaapp.domain.model.WorkoutBlocks.byId(dayId) == null) {
+            programDao.advanceCurrentDay()
+        }
     }
 
     override suspend fun resetProgress() {

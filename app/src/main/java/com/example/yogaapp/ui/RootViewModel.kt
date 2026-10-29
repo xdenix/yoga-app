@@ -57,7 +57,7 @@ class RootViewModel @Inject constructor(
 }
 
 data class RootUiState(
-    val themeMode: ThemeMode = ThemeMode.Dark,
+    val themeMode: ThemeMode = ThemeMode.DustyRose,
     val dynamicColor: Boolean = false,
     val chosenLevel: YogaLevel? = null,
     val nextDestinationAfterSplash: Route = Route.Onboarding,

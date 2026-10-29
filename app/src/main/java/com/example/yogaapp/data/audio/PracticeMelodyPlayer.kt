@@ -24,9 +24,10 @@ class PracticeMelodyPlayer @Inject constructor(
             stop()
             return
         }
-        val key = when (melody) {
-            PracticeMelody.BuiltIn -> "asset:${melody.assetName}"
-            PracticeMelody.FromFile -> customUri?.toString()?.let { "uri:$it" }
+        val asset = melody.assetName
+        val key = when {
+            asset != null -> "asset:$asset"
+            melody == PracticeMelody.FromFile -> customUri?.toString()?.let { "uri:$it" }
             else -> null
         }
         if (key == null) {
@@ -49,14 +50,13 @@ class PracticeMelodyPlayer @Inject constructor(
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build(),
             )
-            when (melody) {
-                PracticeMelody.BuiltIn -> {
-                    val asset = melody.assetName ?: error("missing asset")
+            when {
+                asset != null -> {
                     val afd = context.assets.openFd(asset)
                     created.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
                     afd.close()
                 }
-                PracticeMelody.FromFile -> {
+                melody == PracticeMelody.FromFile -> {
                     created.setDataSource(context, customUri!!)
                 }
                 else -> error("unsupported")

@@ -50,6 +50,8 @@ import com.example.yogaapp.R
 import com.example.yogaapp.data.audio.ExternalMusicLauncher
 import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.domain.model.PoseSide
+import com.example.yogaapp.ui.components.FireworksOverlay
+import com.example.yogaapp.ui.components.FloatingPraiseBanner
 import com.example.yogaapp.ui.components.LoadingState
 import com.example.yogaapp.ui.components.PoseFigure
 import com.example.yogaapp.ui.components.title
@@ -149,7 +151,7 @@ private fun RunningContent(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (current != null) {
-            PoseFigure(pose = current.pose, size = 140.dp)
+            PoseFigure(pose = current.pose, size = 168.dp)
             Text(
                 text = if (state.isRestPause) {
                     stringResource(R.string.session_pause_title)
@@ -260,29 +262,36 @@ private fun FinishedContent(
     onComplete: () -> Unit,
     onClose: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.session_finished_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.session_finished_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.session_mark_done))
-        }
-        Spacer(Modifier.height(8.dp))
-        androidx.compose.material3.OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.action_close))
+    Box(modifier = Modifier.fillMaxSize()) {
+        FireworksOverlay()
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            FloatingPraiseBanner(
+                text = stringResource(R.string.session_praise_banner),
+            )
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = stringResource(R.string.session_finished_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.session_finished_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(onClick = onComplete, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.session_mark_done))
+            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.material3.OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.action_close))
+            }
         }
     }
 }

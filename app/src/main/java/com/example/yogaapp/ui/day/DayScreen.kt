@@ -279,17 +279,20 @@ private fun PoseCard(
                     Icon(Icons.Outlined.Delete, contentDescription = null)
                 }
             }
-            IntCounter(
-                value = currentDuration,
-                onValueChange = onSetDuration,
-                valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
-                step = 5,
-                valueText = stringResource(
-                    R.string.day_duration_template,
-                    YogaRules.durationLabel(currentDuration),
-                ),
-                modifier = Modifier.padding(start = 24.dp),
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 32.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                IntCounter(
+                    value = currentDuration,
+                    onValueChange = onSetDuration,
+                    valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
+                    step = 5,
+                    valueText = YogaRules.durationLabel(currentDuration),
+                )
+            }
         }
     }
 }

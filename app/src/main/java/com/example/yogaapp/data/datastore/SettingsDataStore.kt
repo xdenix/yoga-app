@@ -47,8 +47,9 @@ class SettingsDataStore @Inject constructor(
         when (p[KEY_THEME_MODE]) {
             ThemeMode.Light.name -> ThemeMode.Light
             ThemeMode.System.name -> ThemeMode.System
+            ThemeMode.Dark.name -> ThemeMode.Dark
             ThemeMode.DustyRose.name -> ThemeMode.DustyRose
-            else -> ThemeMode.Dark // default for meditative style
+            else -> ThemeMode.DustyRose // default: Dusty Rose
         }
     }
 

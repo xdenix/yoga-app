@@ -64,6 +64,7 @@ import com.example.yogaapp.domain.model.YogaDay
 import com.example.yogaapp.ui.components.EmptyState
 import com.example.yogaapp.ui.components.ErrorState
 import com.example.yogaapp.ui.components.LoadingState
+import com.example.yogaapp.ui.components.WorkoutCalendarCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -209,6 +210,18 @@ private fun BlocksHubBody(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item {
+            Text(
+                text = stringResource(R.string.calendar_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            WorkoutCalendarCard(
+                trainedDates = state.trainedDates,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
         item {
             Text(
                 text = stringResource(R.string.blocks_section_title),

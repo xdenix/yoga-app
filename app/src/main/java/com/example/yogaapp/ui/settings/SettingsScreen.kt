@@ -58,7 +58,7 @@ import com.example.yogaapp.data.audio.PracticeMelody
 import com.example.yogaapp.data.datastore.AudioMode
 import com.example.yogaapp.data.datastore.ThemeMode
 import com.example.yogaapp.domain.model.YogaRules
-import com.example.yogaapp.ui.components.IntCounter
+import com.example.yogaapp.ui.components.CounterSettingRow
 import com.example.yogaapp.ui.components.title
 import com.example.yogaapp.update.CheckResult
 import com.example.yogaapp.update.GithubAppUpdater
@@ -185,41 +185,32 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_session))
-            Text(
-                text = stringResource(R.string.settings_poses_per_day),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-            IntCounter(
+            CounterSettingRow(
+                title = stringResource(R.string.settings_poses_per_day),
+                subtitle = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
                 value = state.posesPerDay,
                 onValueChange = viewModel::setPosesPerDay,
                 valueRange = YogaRules.MIN_POSES_PER_DAY..YogaRules.MAX_POSES_PER_DAY,
                 step = 1,
-                valueText = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
+                valueText = "${state.posesPerDay}",
             )
-            Text(
-                text = stringResource(R.string.settings_global_duration),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-            IntCounter(
+            CounterSettingRow(
+                title = stringResource(R.string.settings_global_duration),
+                subtitle = stringResource(R.string.settings_global_duration_value, state.globalDurationSec),
                 value = state.globalDurationSec,
                 onValueChange = viewModel::setGlobalDuration,
                 valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
                 step = 5,
-                valueText = stringResource(R.string.settings_global_duration_value, state.globalDurationSec),
+                valueText = "${state.globalDurationSec} с",
             )
-            Text(
-                text = stringResource(R.string.settings_pause_between),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-            )
-            IntCounter(
+            CounterSettingRow(
+                title = stringResource(R.string.settings_pause_between),
+                subtitle = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
                 value = state.pauseBetweenSec,
                 onValueChange = viewModel::setPauseBetweenSec,
                 valueRange = YogaRules.MIN_PAUSE_SEC..YogaRules.MAX_PAUSE_SEC,
                 step = 5,
-                valueText = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
+                valueText = "${state.pauseBetweenSec} с",
             )
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_progress))

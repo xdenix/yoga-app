@@ -95,10 +95,16 @@ class ProgramViewModel @Inject constructor(
             }
         }
         val completedDayIds = progress.map { it.dayId }.toSet()
+        val trainedDates = progress.map { entry ->
+            java.time.Instant.ofEpochMilli(entry.completedAt)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+        }.toSet()
         return ProgramUiState.Content(
             program = program,
             currentDayNumber = program.currentDay,
             completedDayIds = completedDayIds,
+            trainedDates = trainedDates,
         )
     }
 
@@ -121,6 +127,7 @@ sealed interface ProgramUiState {
         val program: YogaProgram,
         val currentDayNumber: Int,
         val completedDayIds: Set<String>,
+        val trainedDates: Set<java.time.LocalDate> = emptySet(),
     ) : ProgramUiState {
         val days: List<YogaDay> get() = program.days
         val completedCount: Int get() = completedDayIds.intersect(days.map { it.id }.toSet()).size

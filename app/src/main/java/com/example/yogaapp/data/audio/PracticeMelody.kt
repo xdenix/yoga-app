@@ -3,26 +3,37 @@ package com.example.yogaapp.data.audio
 /**
  * Источник фоновой музыки для практики.
  *
- * [BuiltIn] — обрезанный суфийский трек в `assets/melodies/sufi_dervish.mp3`.
+ * Встроенные 20–30-минутные треки в `assets/melodies/`:
+ *  - [BuiltIn]          — суфийская церемония (`sufi_dervish.mp3`)
+ *  - [OgdoadaWave]      — Ogdoada · волновой микс (`ogdoada_wave.mp3`)
+ *  - [ZvukiPokoya]      — Звуки Покоя · концентрация (`zvuki_pokoya.mp3`)
+ *  - [OgdoadaDeepFocus] — Ogdoada · Deep focus ambient (`ogdoada_deep_focus.mp3`)
+ *
  * [FromFile] — файл, выбранный пользователем (URI в DataStore).
  * [YandexMusic] / [External] — музыка извне: приложение не играет свой трек.
  */
 enum class PracticeMelody {
     Off,
     BuiltIn,
+    OgdoadaWave,
+    ZvukiPokoya,
+    OgdoadaDeepFocus,
     FromFile,
     YandexMusic,
     External,
     ;
 
-    val playsInApp: Boolean
-        get() = this == BuiltIn || this == FromFile
-
     val assetName: String?
         get() = when (this) {
             BuiltIn -> "melodies/sufi_dervish.mp3"
+            OgdoadaWave -> "melodies/ogdoada_wave.mp3"
+            ZvukiPokoya -> "melodies/zvuki_pokoya.mp3"
+            OgdoadaDeepFocus -> "melodies/ogdoada_deep_focus.mp3"
             else -> null
         }
+
+    val playsInApp: Boolean
+        get() = assetName != null || this == FromFile
 
     companion object {
         private val LEGACY_BUILTIN = setOf(

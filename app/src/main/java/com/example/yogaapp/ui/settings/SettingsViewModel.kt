@@ -167,7 +167,7 @@ class SettingsViewModel @Inject constructor(
 }
 
 data class SettingsUiState(
-    val themeMode: ThemeMode = ThemeMode.Dark,
+    val themeMode: ThemeMode = ThemeMode.DustyRose,
     val dynamicColor: Boolean = false,
     val audioMode: AudioMode = AudioMode.Tts,
     val globalDurationSec: Int = YogaRules.DEFAULT_GLOBAL_DURATION_SEC,

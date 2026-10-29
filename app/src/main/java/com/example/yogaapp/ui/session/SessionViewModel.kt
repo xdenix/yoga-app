@@ -125,6 +125,7 @@ class SessionViewModel @Inject constructor(
             lastCountdownSec = -1
             wasRestPause = false
             wasFinished = false
+            completionRecorded = false
             sessionActive = true
             if (!userPaused) syncMelodyPlayback(currentMelody)
         }
@@ -172,6 +173,7 @@ class SessionViewModel @Inject constructor(
                 }
                 if (!wasFinished && timerState.isFinished) {
                     audioPlayer.playGong()
+                    recordSessionOnce(timerState.elapsedSec)
                 }
                 wasRestPause = timerState.isPause
                 wasFinished = timerState.isFinished
@@ -207,6 +209,15 @@ class SessionViewModel @Inject constructor(
     private var lastCountdownSec = -1
     private var wasRestPause = false
     private var wasFinished = false
+    private var completionRecorded = false
+
+    private fun recordSessionOnce(elapsedSec: Int) {
+        if (completionRecorded) return
+        completionRecorded = true
+        viewModelScope.launch(dispatchers.io) {
+            recordCompletion(dayId, elapsedSec)
+        }
+    }
 
     fun onEvent(event: SessionEvent) {
         when (event) {
@@ -230,10 +241,15 @@ class SessionViewModel @Inject constructor(
             }
             SessionEvent.StopAudio -> audioPlayer.stop()
             SessionEvent.Complete -> viewModelScope.launch(dispatchers.io) {
-                val elapsed = timer.state.value.elapsedSec
-                when (val r = recordCompletion(dayId, elapsed)) {
-                    is Result.Success -> _effects.send(SessionEffect.Completed)
-                    is Result.Failure -> _effects.send(SessionEffect.Error(messageResFor(r.error)))
+                if (!completionRecorded) {
+                    completionRecorded = true
+                    val elapsed = timer.state.value.elapsedSec
+                    when (val r = recordCompletion(dayId, elapsed)) {
+                        is Result.Success -> _effects.send(SessionEffect.Completed)
+                        is Result.Failure -> _effects.send(SessionEffect.Error(messageResFor(r.error)))
+                    }
+                } else {
+                    _effects.send(SessionEffect.Completed)
                 }
             }
             SessionEvent.Finish -> viewModelScope.launch { _effects.send(SessionEffect.Close) }

@@ -24,7 +24,7 @@ import com.example.yogaapp.data.datastore.ThemeMode
  */
 @Composable
 fun YogaAppTheme(
-    themeMode: ThemeMode = ThemeMode.Dark,
+    themeMode: ThemeMode = ThemeMode.DustyRose,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
