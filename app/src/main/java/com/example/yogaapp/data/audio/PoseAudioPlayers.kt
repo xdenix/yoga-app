@@ -1,6 +1,10 @@
 package com.example.yogaapp.data.audio
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.media.ToneGenerator
+import android.media.AudioManager
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
@@ -29,6 +33,7 @@ class TtsPoseAudioPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsDataStore: SettingsDataStore,
     private val mp3Pack: Mp3PackPoseAudioPlayer,
+    private val sessionBell: SessionBellPlayer,
 ) : PoseAudioPlayer {
 
     override val hasAudioPack: Boolean
@@ -55,10 +60,7 @@ class TtsPoseAudioPlayer @Inject constructor(
         }
         withContext(Dispatchers.Main) {
             val engine = tts ?: return@withContext
-            if (!isReady) {
-                configureHumanVoice()
-                isReady = true
-            }
+            ensureReady(engine)
             val text = "${pose.ruName}. ${pose.ruDescription}"
             val params = Bundle().apply {
                 putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
@@ -68,12 +70,34 @@ class TtsPoseAudioPlayer @Inject constructor(
     }
 
     override suspend fun playGong() {
-        mp3Pack.playGong()
+        // Prefer optional audio-pack gong; otherwise bundled session bell / tone.
+        if (mp3Pack.hasGong()) {
+            mp3Pack.playGong()
+        } else {
+            sessionBell.play()
+        }
+    }
+
+    override suspend fun speakCountdown(secondsLeft: Int) {
+        if (secondsLeft !in 1..5) return
+        val mode = settingsDataStore.audioMode.first()
+        if (mode == AudioMode.Off) return
+        val word = COUNTDOWN_RU[secondsLeft] ?: secondsLeft.toString()
+        withContext(Dispatchers.Main) {
+            val engine = tts ?: return@withContext
+            ensureReady(engine)
+            val params = Bundle().apply {
+                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+            }
+            // Flush so the number stays in sync with the timer tick.
+            engine.speak(word, TextToSpeech.QUEUE_FLUSH, params, "countdown-$secondsLeft")
+        }
     }
 
     override fun stop() {
         tts?.stop()
         mp3Pack.stop()
+        sessionBell.stop()
     }
 
     override fun release() {
@@ -82,14 +106,21 @@ class TtsPoseAudioPlayer @Inject constructor(
         tts = null
         isReady = false
         mp3Pack.release()
+        sessionBell.release()
+    }
+
+    private fun ensureReady(engine: TextToSpeech) {
+        if (!isReady) {
+            configureHumanVoice()
+            isReady = true
+        }
     }
 
     private fun configureHumanVoice() {
         val engine = tts ?: return
         val ru = Locale.forLanguageTag("ru-RU")
         engine.language = ru
-        // Slightly slower + neutral pitch reads as calmer / more human for instructions.
-        engine.setSpeechRate(0.88f)
+        engine.setSpeechRate(0.92f)
         engine.setPitch(0.97f)
 
         val voices = runCatching { engine.voices }.getOrNull().orEmpty()
@@ -113,15 +144,90 @@ class TtsPoseAudioPlayer @Inject constructor(
             ) {
                 s += 50
             }
-            if (v.isNetworkConnectionRequired) s += 15 // often higher quality on-device fallbacks exist too
+            if (v.isNetworkConnectionRequired) s += 15
             if (v.latency == Voice.LATENCY_VERY_LOW || v.latency == Voice.LATENCY_LOW) s += 5
-            // Prefer female instructional tone when the name hints at it (common on RU engines).
             if (listOf("female", "woman", "irina", "milena", "oksana", "jane").any { it in name }) {
                 s += 8
             }
             return s
         }
         return russian.maxByOrNull(::score)
+    }
+
+    companion object {
+        private val COUNTDOWN_RU = mapOf(
+            5 to "пять",
+            4 to "четыре",
+            3 to "три",
+            2 to "два",
+            1 to "один",
+        )
+    }
+}
+
+/**
+ * Short session chime from `assets/audio/session_bell.wav`, with [ToneGenerator] fallback.
+ */
+@Singleton
+class SessionBellPlayer @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    private var player: MediaPlayer? = null
+
+    suspend fun play() = withContext(Dispatchers.Main) {
+        stop()
+        val played = runCatching {
+            val afd = context.assets.openFd(BELL_ASSET)
+            val mp = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+                setOnCompletionListener {
+                    runCatching { it.release() }
+                    if (player === it) player = null
+                }
+                prepare()
+                start()
+            }
+            player = mp
+            true
+        }.getOrElse {
+            Timber.w(it, "session bell asset failed")
+            false
+        }
+        if (!played) playToneFallback()
+    }
+
+    fun stop() {
+        player?.let {
+            runCatching {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
+        }
+        player = null
+    }
+
+    fun release() = stop()
+
+    private fun playToneFallback() {
+        runCatching {
+            val tg = ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+            tg.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 280)
+            // Release after tone duration.
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                runCatching { tg.release() }
+            }, 400)
+        }.onFailure { Timber.w(it, "tone fallback failed") }
+    }
+
+    companion object {
+        private const val BELL_ASSET = "audio/session_bell.wav"
     }
 }
 
@@ -141,6 +247,8 @@ class Mp3PackPoseAudioPlayer @Inject constructor(
         get() = packDir.exists() && packDir.listFiles()?.isNotEmpty() == true
 
     fun hasPose(poseId: String): Boolean = File(packDir, "$poseId.mp3").exists()
+
+    fun hasGong(): Boolean = File(packDir, GONG_FILE).exists()
 
     suspend fun playDescription(pose: YogaPose) {
         val audioName = pose.audioAssetName ?: pose.id
@@ -167,12 +275,12 @@ class Mp3PackPoseAudioPlayer @Inject constructor(
 
     fun release() = stop()
 
-    private var currentPlayer: android.media.MediaPlayer? = null
+    private var currentPlayer: MediaPlayer? = null
 
     private suspend fun playFile(file: File) = withContext(Dispatchers.Main) {
         stop()
         runCatching {
-            val player = android.media.MediaPlayer().apply {
+            val player = MediaPlayer().apply {
                 setDataSource(file.absolutePath)
                 setOnCompletionListener { release() }
                 prepare()

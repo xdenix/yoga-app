@@ -19,8 +19,14 @@ interface PoseAudioPlayer {
     /** Speak the pose's description (TTS) or play the recorded MP3 (if pack is installed). */
     suspend fun playDescription(pose: YogaPose)
 
-    /** Play a short chime (used at pose start/end). No-op when the chime asset is missing. */
+    /** Play a short chime (pose start / end). Uses pack gong or bundled `assets/audio/session_bell.wav`. */
     suspend fun playGong()
+
+    /**
+     * Speak a single countdown second (1…5) in Russian.
+     * No-op when voice mode is Off.
+     */
+    suspend fun speakCountdown(secondsLeft: Int)
 
     /** Stop any in-flight playback immediately. */
     fun stop()

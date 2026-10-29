@@ -120,10 +120,11 @@ class SessionViewModel @Inject constructor(
                 pauseBetweenSec = pauseBetween,
             )
             collectTimerState()
-            // Play gong + speak the first pose's description.
-            audioPlayer.playGong()
-            val first = resolvedPoses.first()
-            audioPlayer.playDescription(poseForSpeech(first.first, first.second.side))
+            // Start cue for the first pose (collector also tracks index to avoid a double speak).
+            lastSpokenIndex = -1
+            lastCountdownSec = -1
+            wasRestPause = false
+            wasFinished = false
             sessionActive = true
             if (!userPaused) syncMelodyPlayback(currentMelody)
         }
@@ -163,13 +164,39 @@ class SessionViewModel @Inject constructor(
                         isRestPause = timerState.isPause,
                     )
                 }
-                // When the pose changes, play the gong + describe the new pose (not during rest pause).
+
+                // End-of-exercise bell: pose → rest pause, or last pose → finished.
+                if (!wasRestPause && timerState.isPause) {
+                    audioPlayer.playGong()
+                    lastCountdownSec = -1
+                }
+                if (!wasFinished && timerState.isFinished) {
+                    audioPlayer.playGong()
+                }
+                wasRestPause = timerState.isPause
+                wasFinished = timerState.isFinished
+
+                // Start-of-exercise bell + description (not during rest pause).
                 val currentPose = timerState.current
-                if (currentPose != null && !timerState.isPause) {
+                if (currentPose != null && !timerState.isPause && !timerState.isFinished) {
                     if (lastSpokenIndex != timerState.currentIndex) {
                         lastSpokenIndex = timerState.currentIndex
+                        lastCountdownSec = -1
                         audioPlayer.playGong()
-                        audioPlayer.playDescription(poseForSpeech(currentPose.pose, currentPose.entry.side))
+                        audioPlayer.playDescription(
+                            poseForSpeech(currentPose.pose, currentPose.entry.side),
+                        )
+                    }
+                }
+
+                // Voice the last 5 seconds of an exercise or a rest pause.
+                if (timerState.isRunning && !timerState.isFinished) {
+                    val rem = timerState.remaining
+                    if (rem in 1..5 && rem != lastCountdownSec) {
+                        lastCountdownSec = rem
+                        audioPlayer.speakCountdown(rem)
+                    } else if (rem > 5) {
+                        lastCountdownSec = -1
                     }
                 }
             }
@@ -177,6 +204,9 @@ class SessionViewModel @Inject constructor(
     }
 
     private var lastSpokenIndex = -1
+    private var lastCountdownSec = -1
+    private var wasRestPause = false
+    private var wasFinished = false
 
     fun onEvent(event: SessionEvent) {
         when (event) {
