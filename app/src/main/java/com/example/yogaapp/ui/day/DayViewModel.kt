@@ -52,19 +52,25 @@ class DayViewModel @Inject constructor(
             val poseMap = allPoses.associateBy { it.id }
             val program = repository.observeProgram().first()
             val customDays = repository.observeCustomDays().first()
+            val wlCount = settingsDataStore.weightLossPosesCount.first()
+            val strCount = settingsDataStore.strengthPosesCount.first()
             val day = program?.days?.firstOrNull { it.id == dayId }
                 ?: customDays.firstOrNull { it.id == dayId }
-                ?: WorkoutBlocks.byId(dayId)
+                ?: WorkoutBlocks.byId(dayId, weightLossCount = wlCount, strengthCount = strCount)
             if (day == null) {
                 _uiState.value = DayUiState.NotFound
                 return@launch
             }
             currentDay = day
-            val globalDuration = settingsDataStore.globalDurationSec.first()
+            val blockDuration = when (dayId) {
+                WorkoutBlocks.WEIGHT_LOSS_ID -> settingsDataStore.weightLossDurationSec.first()
+                WorkoutBlocks.STRENGTH_ID -> settingsDataStore.strengthDurationSec.first()
+                else -> settingsDataStore.globalDurationSec.first()
+            }
             _uiState.value = DayUiState.Content(
                 day = day,
                 poseMap = poseMap,
-                globalDurationSec = globalDuration,
+                globalDurationSec = blockDuration,
             )
         }
     }
@@ -220,7 +226,6 @@ sealed interface DayUiState {
         val totalDurationSec: Int
             get() = day.poses.sumOf { e ->
                 e.durationOverrideSec
-                    ?: poseMap[e.poseId]?.defaultDurationSec
                     ?: globalDurationSec
             }
     }

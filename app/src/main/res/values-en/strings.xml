@@ -154,6 +154,11 @@
     <string name="settings_audio_mode_off">Voice off</string>
     <string name="settings_audio_mode_tts">Text-to-speech (default)</string>
     <string name="settings_audio_mode_mp3">Recorded voice (requires audio pack)</string>
+    <string name="settings_voice_male_1">Male 1 · Calm baritone (default)</string>
+    <string name="settings_voice_male_2">Male 2 · Deep bass (mentor)</string>
+    <string name="settings_voice_male_3">Male 3 · Energetic coach</string>
+    <string name="settings_block_poses_count">Exercises count</string>
+    <string name="settings_block_poses_value">%1$d exercises in block</string>
     <string name="settings_audio_pack_status_installed">Audio pack installed</string>
     <string name="settings_audio_pack_status_missing">Audio pack not found. Using text-to-speech.</string>
     <string name="settings_audio_pack_hint">Place &lt;poseId&gt;.mp3 files in the app folder files/audio-pack/</string>

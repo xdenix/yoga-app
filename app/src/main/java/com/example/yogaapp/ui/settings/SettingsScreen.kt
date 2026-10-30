@@ -143,22 +143,6 @@ fun SettingsScreen(
             )
             if (state.audioMode != AudioMode.Off) {
                 AudioModeRow(current = state.audioMode, onSelect = viewModel::setAudioMode)
-                Text(
-                    text = if (state.hasAudioPack) {
-                        stringResource(R.string.settings_audio_pack_status_installed)
-                    } else {
-                        stringResource(R.string.settings_audio_pack_status_missing)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
-                Text(
-                    text = stringResource(R.string.settings_audio_pack_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                )
             }
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_melody))
@@ -183,8 +167,10 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
+
+            // ── Block 1: Программа · 30 дней ────────────────────────────────────
             HorizontalDivider()
-            SectionHeader(stringResource(R.string.settings_section_session))
+            SectionHeader(stringResource(R.string.block_plan_title))
             CounterSettingRow(
                 title = stringResource(R.string.settings_poses_per_day),
                 subtitle = stringResource(R.string.settings_poses_per_day_value, state.posesPerDay),
@@ -203,6 +189,54 @@ fun SettingsScreen(
                 step = 5,
                 valueText = "${state.globalDurationSec} с",
             )
+
+            // ── Block 2: Похудение · йога ───────────────────────────────────────
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.block_weight_loss_title))
+            CounterSettingRow(
+                title = stringResource(R.string.settings_block_poses_count),
+                subtitle = stringResource(R.string.settings_block_poses_value, state.weightLossPosesCount),
+                value = state.weightLossPosesCount,
+                onValueChange = viewModel::setWeightLossPosesCount,
+                valueRange = YogaRules.MIN_POSES_PER_DAY..YogaRules.MAX_POSES_PER_DAY,
+                step = 1,
+                valueText = "${state.weightLossPosesCount}",
+            )
+            CounterSettingRow(
+                title = stringResource(R.string.settings_global_duration),
+                subtitle = stringResource(R.string.settings_global_duration_value, state.weightLossDurationSec),
+                value = state.weightLossDurationSec,
+                onValueChange = viewModel::setWeightLossDuration,
+                valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
+                step = 5,
+                valueText = "${state.weightLossDurationSec} с",
+            )
+
+            // ── Block 3: Силовой блок ───────────────────────────────────────────
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.block_strength_title))
+            CounterSettingRow(
+                title = stringResource(R.string.settings_block_poses_count),
+                subtitle = stringResource(R.string.settings_block_poses_value, state.strengthPosesCount),
+                value = state.strengthPosesCount,
+                onValueChange = viewModel::setStrengthPosesCount,
+                valueRange = YogaRules.MIN_POSES_PER_DAY..YogaRules.MAX_POSES_PER_DAY,
+                step = 1,
+                valueText = "${state.strengthPosesCount}",
+            )
+            CounterSettingRow(
+                title = stringResource(R.string.settings_global_duration),
+                subtitle = stringResource(R.string.settings_global_duration_value, state.strengthDurationSec),
+                value = state.strengthDurationSec,
+                onValueChange = viewModel::setStrengthDuration,
+                valueRange = YogaRules.MIN_DURATION_SEC..YogaRules.MAX_DURATION_SEC,
+                step = 5,
+                valueText = "${state.strengthDurationSec} с",
+            )
+
+            // ── Общая пауза между упражнениями ──────────────────────────────────
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_section_session))
             CounterSettingRow(
                 title = stringResource(R.string.settings_pause_between),
                 subtitle = stringResource(R.string.settings_pause_between_value, state.pauseBetweenSec),
@@ -212,6 +246,7 @@ fun SettingsScreen(
                 step = 5,
                 valueText = "${state.pauseBetweenSec} с",
             )
+
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_section_progress))
             Text(
@@ -273,7 +308,6 @@ private fun UpdateRow(snackbarHostState: SnackbarHostState) {
                     }
                     return@OutlinedButton
                 }
-                // Prefer the host Activity instance so pending-install survives unknown-sources.
                 val updater = (activity as? com.example.yogaapp.MainActivity)?.githubUpdaterForSettings()
                     ?: GithubAppUpdater(activity)
                 checking = true
@@ -368,8 +402,9 @@ private fun MelodyRow(current: PracticeMelody, onSelect: (PracticeMelody) -> Uni
 @Composable
 private fun AudioModeRow(current: AudioMode, onSelect: (AudioMode) -> Unit) {
     val options = listOf(
-        AudioMode.Tts to R.string.settings_audio_mode_tts,
-        AudioMode.Mp3Pack to R.string.settings_audio_mode_mp3,
+        AudioMode.Male1 to R.string.settings_voice_male_1,
+        AudioMode.Male2 to R.string.settings_voice_male_2,
+        AudioMode.Male3 to R.string.settings_voice_male_3,
     )
     options.forEach { (mode, labelRes) ->
         val label = stringResource(labelRes)

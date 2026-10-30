@@ -21,16 +21,16 @@ import javax.inject.Singleton
  * Preferences DataStore for app-level settings.
  *
  * Persisted keys:
- *  - themeMode: System / Light / Dark (default: Dark for meditative feel)
- *  - dynamicColor: Material You colours on Android 12+ (default: false — we want our custom palette)
+ *  - themeMode: System / Light / Dark / DustyRose (default: DustyRose)
+ *  - dynamicColor: Material You colours on Android 12+ (default: false)
  *  - onboardingShown: flag set after the user picks a level on first launch
  *  - chosenLevel: Beginner / Intermediate / Advanced (drives program generation)
- *  - audioMode: Off / TTS / MP3_PACK (default: TTS)
+ *  - audioMode: Off / Male1 / Male2 / Male3 (default: Male1)
  *  - customMusicUri: content:// URI for [PracticeMelody.FromFile]
- *  - globalDurationSec: default duration applied to all poses when not overridden (default: 30)
- *  - posesPerDay: how many random poses each program day gets (default: 10)
+ *  - Block 1 (30-day program): posesPerDay + globalDurationSec
+ *  - Block 2 (Weight-loss yoga): weightLossPosesCount + weightLossDurationSec
+ *  - Block 3 (Strength block): strengthPosesCount + strengthDurationSec
  *  - pauseBetweenSec: rest seconds between poses in a session (default: 10)
- *  - audioPackEnabled: whether to use the optional MP3 pack when present (default: false)
  */
 private val Context.yogaSettingsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "yoga_app_settings",
@@ -49,7 +49,7 @@ class SettingsDataStore @Inject constructor(
             ThemeMode.System.name -> ThemeMode.System
             ThemeMode.Dark.name -> ThemeMode.Dark
             ThemeMode.DustyRose.name -> ThemeMode.DustyRose
-            else -> ThemeMode.DustyRose // default: Dusty Rose
+            else -> ThemeMode.DustyRose
         }
     }
 
@@ -62,20 +62,42 @@ class SettingsDataStore @Inject constructor(
     }
 
     val audioMode: Flow<AudioMode> = store.data.map { p ->
-        when (p[KEY_AUDIO_MODE]) {
-            AudioMode.Off.name -> AudioMode.Off
-            AudioMode.Mp3Pack.name -> AudioMode.Mp3Pack
-            else -> AudioMode.Tts
-        }
+        AudioMode.fromStored(p[KEY_AUDIO_MODE])
     }
 
+    /** Block 1 (30-day plan): exercise duration in seconds. */
     val globalDurationSec: Flow<Int> = store.data.map { p ->
-        p[KEY_GLOBAL_DURATION] ?: DEFAULT_GLOBAL_DURATION
+        (p[KEY_GLOBAL_DURATION] ?: DEFAULT_GLOBAL_DURATION).coerceIn(MIN_DURATION, MAX_DURATION)
     }
 
+    /** Block 1 (30-day plan): exercises per day. */
     val posesPerDay: Flow<Int> = store.data.map { p ->
         (p[KEY_POSES_PER_DAY] ?: YogaRules.DEFAULT_POSES_PER_DAY)
             .coerceIn(YogaRules.MIN_POSES_PER_DAY, YogaRules.MAX_POSES_PER_DAY)
+    }
+
+    /** Block 2 (Weight-loss yoga): exercises count. */
+    val weightLossPosesCount: Flow<Int> = store.data.map { p ->
+        (p[KEY_WEIGHT_LOSS_POSES] ?: DEFAULT_WEIGHT_LOSS_POSES)
+            .coerceIn(YogaRules.MIN_POSES_PER_DAY, YogaRules.MAX_POSES_PER_DAY)
+    }
+
+    /** Block 2 (Weight-loss yoga): exercise duration in seconds. */
+    val weightLossDurationSec: Flow<Int> = store.data.map { p ->
+        (p[KEY_WEIGHT_LOSS_DURATION] ?: DEFAULT_WEIGHT_LOSS_DURATION)
+            .coerceIn(MIN_DURATION, MAX_DURATION)
+    }
+
+    /** Block 3 (Strength): exercises count. */
+    val strengthPosesCount: Flow<Int> = store.data.map { p ->
+        (p[KEY_STRENGTH_POSES] ?: DEFAULT_STRENGTH_POSES)
+            .coerceIn(YogaRules.MIN_POSES_PER_DAY, YogaRules.MAX_POSES_PER_DAY)
+    }
+
+    /** Block 3 (Strength): exercise duration in seconds. */
+    val strengthDurationSec: Flow<Int> = store.data.map { p ->
+        (p[KEY_STRENGTH_DURATION] ?: DEFAULT_STRENGTH_DURATION)
+            .coerceIn(MIN_DURATION, MAX_DURATION)
     }
 
     val pauseBetweenSec: Flow<Int> = store.data.map { p ->
@@ -126,6 +148,32 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
+    suspend fun setWeightLossPosesCount(count: Int) {
+        store.edit {
+            it[KEY_WEIGHT_LOSS_POSES] = count.coerceIn(
+                YogaRules.MIN_POSES_PER_DAY,
+                YogaRules.MAX_POSES_PER_DAY,
+            )
+        }
+    }
+
+    suspend fun setWeightLossDuration(sec: Int) {
+        store.edit { it[KEY_WEIGHT_LOSS_DURATION] = sec.coerceIn(MIN_DURATION, MAX_DURATION) }
+    }
+
+    suspend fun setStrengthPosesCount(count: Int) {
+        store.edit {
+            it[KEY_STRENGTH_POSES] = count.coerceIn(
+                YogaRules.MIN_POSES_PER_DAY,
+                YogaRules.MAX_POSES_PER_DAY,
+            )
+        }
+    }
+
+    suspend fun setStrengthDuration(sec: Int) {
+        store.edit { it[KEY_STRENGTH_DURATION] = sec.coerceIn(MIN_DURATION, MAX_DURATION) }
+    }
+
     suspend fun setPauseBetweenSec(sec: Int) {
         store.edit {
             it[KEY_PAUSE_BETWEEN] = sec.coerceIn(YogaRules.MIN_PAUSE_SEC, YogaRules.MAX_PAUSE_SEC)
@@ -155,15 +203,52 @@ class SettingsDataStore @Inject constructor(
         private val KEY_AUDIO_MODE = stringPreferencesKey("audio_mode")
         private val KEY_GLOBAL_DURATION = intPreferencesKey("global_duration")
         private val KEY_POSES_PER_DAY = intPreferencesKey("poses_per_day")
+        private val KEY_WEIGHT_LOSS_POSES = intPreferencesKey("weight_loss_poses_count")
+        private val KEY_WEIGHT_LOSS_DURATION = intPreferencesKey("weight_loss_duration_sec")
+        private val KEY_STRENGTH_POSES = intPreferencesKey("strength_poses_count")
+        private val KEY_STRENGTH_DURATION = intPreferencesKey("strength_duration_sec")
         private val KEY_PAUSE_BETWEEN = intPreferencesKey("pause_between_sec")
         private val KEY_AUDIO_PACK_ENABLED = booleanPreferencesKey("audio_pack_enabled")
         private val KEY_MELODY = stringPreferencesKey("practice_melody")
         private val KEY_CUSTOM_MUSIC_URI = stringPreferencesKey("custom_music_uri")
 
-        const val DEFAULT_GLOBAL_DURATION = 30
+        const val DEFAULT_GLOBAL_DURATION = 45
+        const val DEFAULT_WEIGHT_LOSS_POSES = 15
+        const val DEFAULT_WEIGHT_LOSS_DURATION = 45
+        const val DEFAULT_STRENGTH_POSES = 15
+        const val DEFAULT_STRENGTH_DURATION = 40
         const val MIN_DURATION = 10
         const val MAX_DURATION = 300
     }
 }
 
-enum class AudioMode { Off, Tts, Mp3Pack }
+/**
+ * Voice narration mode: Off or one of 3 distinct Russian male voice profiles.
+ */
+enum class AudioMode(
+    val bundledPitch: Float,
+    val bundledSpeed: Float,
+    val ttsPitch: Float,
+    val ttsRate: Float,
+) {
+    Off(1.0f, 1.0f, 1.0f, 1.0f),
+    /** Мужской 1 — спокойный баритон (по умолчанию). */
+    Male1(bundledPitch = 1.00f, bundledSpeed = 1.00f, ttsPitch = 0.78f, ttsRate = 0.92f),
+    /** Мужской 2 — глубокий бас (наставник). */
+    Male2(bundledPitch = 0.87f, bundledSpeed = 0.94f, ttsPitch = 0.64f, ttsRate = 0.86f),
+    /** Мужской 3 — бодрый тренер. */
+    Male3(bundledPitch = 1.11f, bundledSpeed = 1.06f, ttsPitch = 0.90f, ttsRate = 1.02f),
+    ;
+
+    companion object {
+        val voiceVariants: List<AudioMode> = listOf(Male1, Male2, Male3)
+
+        fun fromStored(raw: String?): AudioMode = when (raw) {
+            Off.name -> Off
+            Male2.name -> Male2
+            Male3.name -> Male3
+            // Migrate legacy Tts / Mp3Pack / null to default Male1
+            else -> Male1
+        }
+    }
+}

@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.PlaybackParams
 import android.media.ToneGenerator
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -23,13 +24,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Default implementation of [PoseAudioPlayer].
+ * Default implementation of [PoseAudioPlayer] supporting 3 Russian male voice variants
+ * ([AudioMode.Male1], [AudioMode.Male2], [AudioMode.Male3]).
  *
  * Chinese ROM compatibility (Xiaomi CN, HarmonyOS, OriginOS, ColorOS):
- *  1. Bundled offline Russian voice (`assets/voice_ru/<id>.mp3`) is used whenever available —
- *     works on 100% of devices without Google Speech Services or system Russian TTS data.
- *  2. Android [TextToSpeech] scans installed engines (`com.google.android.tts`, RHVoice,
- *     Samsung, etc.) if the default Chinese system engine lacks Russian (`ru-RU`).
+ *  1. Bundled offline Russian male voice (`assets/voice_ru/<id>.mp3`) with [PlaybackParams]
+ *     pitch/speed shaping per selected male voice profile.
+ *  2. Android [TextToSpeech] fallback with male Russian voice selection and pitch/rate tuning.
  */
 @Singleton
 class TtsPoseAudioPlayer @Inject constructor(
@@ -54,7 +55,7 @@ class TtsPoseAudioPlayer @Inject constructor(
     private fun initTts(preferredEngine: String?) {
         val listener = TextToSpeech.OnInitListener { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val hasRu = configureHumanVoice()
+                val hasRu = configureMaleVoice(AudioMode.Male1)
                 isReady = hasRu
                 if (!hasRu && !triedFallbackEngines) {
                     triedFallbackEngines = true
@@ -72,10 +73,6 @@ class TtsPoseAudioPlayer @Inject constructor(
         }
     }
 
-    /**
-     * On Chinese firmwares the default TTS is often XiaoAi / iFlytek / Vivo TTS without ru-RU.
-     * If Google Speech Services or RHVoice is present on the device, switch to it.
-     */
     private fun trySwitchToRussianCapableEngine() {
         val engine = tts ?: return
         val installed = runCatching { engine.engines.map { it.name }.toSet() }.getOrDefault(emptySet())
@@ -91,22 +88,18 @@ class TtsPoseAudioPlayer @Inject constructor(
         val mode = settingsDataStore.audioMode.first()
         if (mode == AudioMode.Off) return
 
-        // 1. User-supplied external audio pack in files/audio-pack/
-        if (mode == AudioMode.Mp3Pack && mp3Pack.hasPose(pose.id)) {
+        if (bundledRuVoice.playPose(pose, mode)) {
+            return
+        }
+
+        if (mp3Pack.hasPose(pose.id)) {
             mp3Pack.playDescription(pose)
             return
         }
 
-        // 2. Built-in offline Russian voice in assets/voice_ru/ — guarantees Russian speech
-        //    on Chinese ROMs even when no Russian TTS engine is installed.
-        if (bundledRuVoice.playPose(pose)) {
-            return
-        }
-
-        // 3. Fallback to Android TextToSpeech (ru-RU).
         withContext(Dispatchers.Main) {
             val engine = tts ?: return@withContext
-            ensureReady(engine)
+            ensureReady(engine, mode)
             val text = "${pose.ruName}. ${pose.ruDescription}"
             val params = Bundle().apply {
                 putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
@@ -128,8 +121,7 @@ class TtsPoseAudioPlayer @Inject constructor(
         val mode = settingsDataStore.audioMode.first()
         if (mode == AudioMode.Off) return
 
-        // Prefer bundled offline Russian countdown clip so Chinese ROMs always speak Russian.
-        if (bundledRuVoice.playCountdown(secondsLeft)) {
+        if (bundledRuVoice.playCountdown(secondsLeft, mode)) {
             tts?.stop()
             return
         }
@@ -137,7 +129,7 @@ class TtsPoseAudioPlayer @Inject constructor(
         val word = COUNTDOWN_RU[secondsLeft] ?: secondsLeft.toString()
         withContext(Dispatchers.Main) {
             val engine = tts ?: return@withContext
-            ensureReady(engine)
+            ensureReady(engine, mode)
             val params = Bundle().apply {
                 putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
             }
@@ -162,16 +154,16 @@ class TtsPoseAudioPlayer @Inject constructor(
         sessionBell.release()
     }
 
-    private fun ensureReady(engine: TextToSpeech) {
+    private fun ensureReady(engine: TextToSpeech, mode: AudioMode) {
         if (!isReady) {
-            isReady = configureHumanVoice()
+            isReady = configureMaleVoice(mode)
+        } else {
+            engine.setPitch(mode.ttsPitch)
+            engine.setSpeechRate(mode.ttsRate)
         }
     }
 
-    /**
-     * Configures Russian locale & voice. Returns `true` if the engine genuinely supports Russian.
-     */
-    private fun configureHumanVoice(): Boolean {
+    private fun configureMaleVoice(mode: AudioMode): Boolean {
         val engine = tts ?: return false
         val ru = Locale.forLanguageTag("ru-RU")
         val avail = runCatching { engine.isLanguageAvailable(ru) }
@@ -181,11 +173,11 @@ class TtsPoseAudioPlayer @Inject constructor(
             return false
         }
         engine.language = ru
-        engine.setSpeechRate(0.92f)
-        engine.setPitch(0.97f)
+        engine.setSpeechRate(mode.ttsRate)
+        engine.setPitch(mode.ttsPitch)
 
         val voices = runCatching { engine.voices }.getOrNull().orEmpty()
-        val best = pickBestRussianVoice(voices)
+        val best = pickBestRussianMaleVoice(voices)
         if (best != null) {
             runCatching { engine.voice = best }
                 .onSuccess { Timber.d("TTS voice: ${best.name} quality=${best.quality}") }
@@ -194,7 +186,7 @@ class TtsPoseAudioPlayer @Inject constructor(
         return true
     }
 
-    private fun pickBestRussianVoice(voices: Set<Voice>): Voice? {
+    private fun pickBestRussianMaleVoice(voices: Set<Voice>): Voice? {
         val russian = voices.filter { it.locale.language.equals("ru", ignoreCase = true) }
         if (russian.isEmpty()) return null
 
@@ -206,11 +198,15 @@ class TtsPoseAudioPlayer @Inject constructor(
             ) {
                 s += 50
             }
+            // Prefer male Russian voices (Pavel, Dmitry, Yuri, Artem, male, etc.).
+            if (listOf("male", "man", "dmitry", "pavel", "yuri", "artem", "maxim", "ru-ru-x-rud", "ru-ru-x-rue")
+                    .any { it in name } &&
+                !name.contains("female")
+            ) {
+                s += 35
+            }
             if (v.isNetworkConnectionRequired) s += 15
             if (v.latency == Voice.LATENCY_VERY_LOW || v.latency == Voice.LATENCY_LOW) s += 5
-            if (listOf("female", "woman", "irina", "milena", "oksana", "jane").any { it in name }) {
-                s += 8
-            }
             return s
         }
         return russian.maxByOrNull(::score)
@@ -235,8 +231,8 @@ class TtsPoseAudioPlayer @Inject constructor(
 }
 
 /**
- * Plays bundled Russian voice MP3s from `assets/voice_ru/` so Russian speech works offline
- * on any Android firmware (including Chinese ROMs without Russian system TTS).
+ * Plays bundled Russian male voice MP3s from `assets/voice_ru/` with 3 distinct male timbre
+ * profiles ([AudioMode.Male1], [AudioMode.Male2], [AudioMode.Male3]) via [PlaybackParams].
  */
 @Singleton
 class BundledRuVoicePlayer @Inject constructor(
@@ -251,7 +247,7 @@ class BundledRuVoicePlayer @Inject constructor(
 
     private var currentPlayer: MediaPlayer? = null
 
-    suspend fun playPose(pose: YogaPose): Boolean {
+    suspend fun playPose(pose: YogaPose, mode: AudioMode): Boolean {
         val suffix = when {
             pose.ruName.endsWith("(справа)") -> "_right"
             pose.ruName.endsWith("(слева)") -> "_left"
@@ -264,16 +260,16 @@ class BundledRuVoicePlayer @Inject constructor(
             fallback in availableAssets -> fallback
             else -> return false
         }
-        return playAsset("$VOICE_DIR/$fileName")
+        return playAsset("$VOICE_DIR/$fileName", mode)
     }
 
-    suspend fun playCountdown(secondsLeft: Int): Boolean {
+    suspend fun playCountdown(secondsLeft: Int, mode: AudioMode): Boolean {
         val fileName = "count_$secondsLeft.mp3"
         if (fileName !in availableAssets) return false
-        return playAsset("$VOICE_DIR/$fileName")
+        return playAsset("$VOICE_DIR/$fileName", mode)
     }
 
-    private suspend fun playAsset(assetPath: String): Boolean = withContext(Dispatchers.Main) {
+    private suspend fun playAsset(assetPath: String, mode: AudioMode): Boolean = withContext(Dispatchers.Main) {
         stop()
         runCatching {
             val afd = context.assets.openFd(assetPath)
@@ -291,6 +287,11 @@ class BundledRuVoicePlayer @Inject constructor(
                     if (currentPlayer === it) currentPlayer = null
                 }
                 prepare()
+                runCatching {
+                    playbackParams = PlaybackParams()
+                        .setPitch(mode.bundledPitch)
+                        .setSpeed(mode.bundledSpeed)
+                }.onFailure { Timber.w(it, "PlaybackParams unsupported on this device") }
                 start()
             }
             currentPlayer = mp

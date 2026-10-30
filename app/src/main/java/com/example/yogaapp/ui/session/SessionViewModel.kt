@@ -98,9 +98,11 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch(dispatchers.io) {
             val program = repository.observeProgram().first()
             val customDays = repository.observeCustomDays().first()
+            val wlCount = settingsDataStore.weightLossPosesCount.first()
+            val strCount = settingsDataStore.strengthPosesCount.first()
             val day = program?.days?.firstOrNull { it.id == dayId }
                 ?: customDays.firstOrNull { it.id == dayId }
-                ?: WorkoutBlocks.byId(dayId)
+                ?: WorkoutBlocks.byId(dayId, weightLossCount = wlCount, strengthCount = strCount)
             if (day == null) {
                 sessionActive = false
                 melodyPlayer.stop()
@@ -112,11 +114,15 @@ class SessionViewModel @Inject constructor(
             val resolvedPoses: List<Pair<YogaPose, DayPoseEntry>> = day.poses.mapNotNull { entry ->
                 poseMap[entry.poseId]?.let { pose -> pose to entry }
             }
-            val globalDuration = settingsDataStore.globalDurationSec.first()
+            val blockDuration = when (dayId) {
+                WorkoutBlocks.WEIGHT_LOSS_ID -> settingsDataStore.weightLossDurationSec.first()
+                WorkoutBlocks.STRENGTH_ID -> settingsDataStore.strengthDurationSec.first()
+                else -> settingsDataStore.globalDurationSec.first()
+            }
             val pauseBetween = settingsDataStore.pauseBetweenSec.first()
             timer.start(
                 resolvedPoses,
-                globalDurationSec = globalDuration,
+                globalDurationSec = blockDuration,
                 pauseBetweenSec = pauseBetween,
             )
             collectTimerState()
@@ -271,7 +277,7 @@ class SessionViewModel @Inject constructor(
         viewModelScope.launch {
             if (enabled) {
                 if (settingsDataStore.audioMode.first() == AudioMode.Off) {
-                    settingsDataStore.setAudioMode(AudioMode.Tts)
+                    settingsDataStore.setAudioMode(AudioMode.Male1)
                 }
             } else {
                 audioPlayer.stop()

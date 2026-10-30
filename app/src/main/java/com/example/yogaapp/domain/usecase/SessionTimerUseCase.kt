@@ -34,8 +34,8 @@ class SessionTimerUseCase @Inject constructor(
         cancel()
         this.pauseBetweenSec = pauseBetweenSec.coerceIn(YogaRules.MIN_PAUSE_SEC, YogaRules.MAX_PAUSE_SEC)
         val entries = poses.mapIndexed { idx, (pose, entry) ->
-            val duration = globalDurationSec
-                ?: entry.durationOverrideSec
+            val duration = entry.durationOverrideSec
+                ?: globalDurationSec
                 ?: pose.defaultDurationSec
             SessionPose(
                 pose = pose,

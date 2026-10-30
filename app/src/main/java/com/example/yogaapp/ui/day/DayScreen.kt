@@ -206,7 +206,7 @@ private fun PoseCard(
     onDelete: () -> Unit,
 ) {
     val cd = stringResource(R.string.cd_pose_card_template, pose.ruName)
-    val currentDuration = entry.durationOverrideSec ?: pose.defaultDurationSec
+    val currentDuration = entry.durationOverrideSec ?: globalDurationSec
     Card(
         modifier = Modifier
             .fillMaxWidth()
